@@ -4,157 +4,469 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Technical SEO Quiz</title>
+
+  <!-- SNS向け（最低限） -->
+  <meta property="og:title" content="Technical SEO Quiz" />
+  <meta property="og:description" content="Browser-based Technical SEO quiz game (Crawl / Index / CWV / Canonical / Rendering)." />
+  <meta property="og:url" content="https://takuma51.github.io/techseo-quiz/" />
+  <meta name="twitter:card" content="summary_large_image" />
+
   <style>
-    :root { color-scheme: light dark; }
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; }
-    .wrap { max-width: 860px; margin: 0 auto; padding: 20px; }
-    .card { border: 1px solid rgba(127,127,127,.25); border-radius: 14px; padding: 16px; margin: 12px 0; }
-    .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
-    .btn { padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(127,127,127,.35); background: transparent; cursor: pointer; }
-    .btn:hover { filter: brightness(1.08); }
-    .btn.primary { border-color: rgba(70,120,255,.55); }
-    .grid { display: grid; gap: 10px; }
-    .choice { text-align: left; }
-    .muted { opacity: .7; }
-    .pill { display:inline-block; padding: 4px 10px; border: 1px solid rgba(127,127,127,.35); border-radius: 999px; }
-    .ok { color: #1f9d55; }
-    .ng { color: #e55353; }
-    .hide { display: none; }
-    .hr { height: 1px; background: rgba(127,127,127,.25); margin: 10px 0; }
-    input, select { padding: 8px 10px; border-radius: 10px; border: 1px solid rgba(127,127,127,.35); background: transparent; }
+    :root{
+      --bg0:#0b1020;
+      --bg1:#0e1630;
+      --card:rgba(255,255,255,.06);
+      --card2:rgba(255,255,255,.085);
+      --stroke:rgba(255,255,255,.12);
+      --text:rgba(255,255,255,.92);
+      --muted:rgba(255,255,255,.66);
+      --brand:#7c5cff;
+      --brand2:#22c1c3;
+      --ok:#2dd4bf;
+      --ng:#fb7185;
+      --shadow: 0 18px 60px rgba(0,0,0,.45);
+      --r:18px;
+      --r2:24px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background:
+        radial-gradient(1200px 600px at 20% 0%, rgba(124,92,255,.35), transparent 55%),
+        radial-gradient(900px 520px at 95% 10%, rgba(34,193,195,.25), transparent 60%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      overflow-x:hidden;
+    }
+    a{color:inherit}
+    .wrap{max-width:980px;margin:0 auto;padding:26px 18px 80px}
+    .topbar{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      margin-bottom:14px;
+    }
+    .brand{
+      display:flex;align-items:center;gap:12px;
+    }
+    .logo{
+      width:40px;height:40px;border-radius:14px;
+      background: linear-gradient(135deg, rgba(124,92,255,.95), rgba(34,193,195,.9));
+      box-shadow: 0 10px 30px rgba(124,92,255,.25);
+      position:relative;
+    }
+    .logo:after{
+      content:"";
+      position:absolute;inset:10px;
+      border-radius:12px;
+      background:rgba(0,0,0,.22);
+      border:1px solid rgba(255,255,255,.18);
+    }
+    h1{font-size:24px;margin:0}
+    .subtitle{color:var(--muted);font-size:13px;margin-top:2px}
+    .actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+
+    .card{
+      background: linear-gradient(180deg, var(--card), rgba(255,255,255,.04));
+      border:1px solid var(--stroke);
+      border-radius: var(--r2);
+      box-shadow: var(--shadow);
+      padding:16px;
+      backdrop-filter: blur(12px);
+    }
+    .grid{
+      display:grid;gap:14px;
+      grid-template-columns: 1.1fr .9fr;
+    }
+    @media (max-width: 920px){ .grid{grid-template-columns:1fr} }
+
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:8px 10px;border-radius:999px;
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.04);
+      color:var(--text);
+      font-size:13px;
+    }
+    .pill b{font-variant-numeric:tabular-nums}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .row.space{justify-content:space-between}
+    .muted{color:var(--muted)}
+    .hr{height:1px;background:rgba(255,255,255,.10);margin:12px 0}
+
+    .btn{
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.05);
+      color:var(--text);
+      border-radius: 14px;
+      padding:10px 12px;
+      cursor:pointer;
+      transition: transform .08s ease, filter .15s ease, background .15s ease;
+      display:inline-flex;align-items:center;gap:8px;
+      user-select:none;
+    }
+    .btn:hover{filter:brightness(1.08)}
+    .btn:active{transform: translateY(1px)}
+    .btn.primary{
+      border-color: rgba(124,92,255,.55);
+      background: linear-gradient(135deg, rgba(124,92,255,.34), rgba(34,193,195,.16));
+    }
+    .btn.ghost{background: transparent}
+    .btn.good{border-color: rgba(45,212,191,.55)}
+    .btn.bad{border-color: rgba(251,113,133,.55)}
+
+    select,input{
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.05);
+      color:var(--text);
+      border-radius: 14px;
+      padding:10px 12px;
+      outline:none;
+    }
+    input{width:110px}
+
+    .progress{
+      height:10px;border-radius:999px;background:rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.10);
+      overflow:hidden;
+    }
+    .bar{
+      height:100%;
+      width:0%;
+      background: linear-gradient(90deg, rgba(124,92,255,.95), rgba(34,193,195,.95));
+      border-radius:999px;
+      transition: width .25s ease;
+    }
+
+    .qmeta{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .chip{
+      font-size:12px; padding:6px 10px;border-radius:999px;
+      border:1px solid var(--stroke); background: rgba(255,255,255,.04);
+      color:var(--muted);
+    }
+    .qtitle{font-size:20px;margin:10px 0 12px;line-height:1.35}
+    .choices{display:grid;gap:10px}
+    .choice{
+      text-align:left;
+      padding:12px 12px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.045);
+      border:1px solid rgba(255,255,255,.12);
+      transition: transform .08s ease, background .15s ease, border-color .15s ease;
+    }
+    .choice:hover{background: rgba(255,255,255,.06)}
+    .choice.correct{border-color: rgba(45,212,191,.55); background: rgba(45,212,191,.10)}
+    .choice.wrong{border-color: rgba(251,113,133,.55); background: rgba(251,113,133,.10)}
+
+    .feedback{
+      display:none;
+      margin-top:12px;
+      padding:14px;
+      border-radius: var(--r);
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.04);
+    }
+    .feedback.show{display:block}
+    .ok{color:var(--ok)} .ng{color:var(--ng)}
+    .kbd{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:12px}
+
+    /* Modal */
+    .overlay{
+      position:fixed; inset:0;
+      background: rgba(0,0,0,.55);
+      display:none;
+      align-items:center; justify-content:center;
+      padding:20px;
+      z-index:50;
+    }
+    .overlay.show{display:flex}
+    .modal{
+      width:min(560px, 100%);
+      border-radius: 24px;
+      border:1px solid rgba(255,255,255,.18);
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.06));
+      box-shadow: 0 28px 90px rgba(0,0,0,.55);
+      padding:18px;
+      position:relative;
+      overflow:hidden;
+    }
+    .modal h3{margin:0 0 6px;font-size:18px}
+    .modal .big{font-size:28px;margin:6px 0 10px}
+    .modal .sub{color:var(--muted);font-size:13px}
+    .modal .row{margin-top:12px;justify-content:flex-end}
+    .glow{
+      position:absolute; inset:-80px;
+      background: radial-gradient(600px 320px at 40% 20%, rgba(124,92,255,.45), transparent 60%),
+                  radial-gradient(520px 280px at 80% 10%, rgba(34,193,195,.35), transparent 62%);
+      filter: blur(10px);
+      opacity:.85;
+      pointer-events:none;
+    }
+
+    /* Confetti */
+    .confetti{
+      position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:60;
+      display:none;
+    }
+    .confetti.show{display:block}
+    .piece{
+      position:absolute;
+      width:10px;height:16px;
+      border-radius: 4px;
+      opacity:.95;
+      top:-20px;
+      animation: fall linear forwards;
+    }
+    @keyframes fall{
+      to{ transform: translateY(calc(100vh + 40px)) rotate(720deg); }
+    }
+
+    footer{margin-top:18px;text-align:center;color:var(--muted);font-size:12px}
+    .tiny{font-size:12px}
   </style>
 </head>
+
 <body>
   <div class="wrap">
-    <h1>Technical SEO Quiz</h1>
-    <p class="muted">ブラウザだけで動く／ローカル保存OK。問題はJS配列に足すだけ。</p>
-
-    <div class="card">
-      <div class="row">
-        <span class="pill">スコア: <b id="score">0</b></span>
-        <span class="pill">連続正解: <b id="streak">0</b></span>
-        <span class="pill">残り: <b id="remaining">0</b></span>
-        <span class="pill">タイム: <b id="time">—</b></span>
-        <span class="pill">自己ベスト: <b id="best">0</b></span>
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo"></div>
+        <div>
+          <h1>Technical SEO Quiz</h1>
+          <div class="subtitle">ブラウザだけで動く／URL共有OK。ランクで成長が見えるクイズ。</div>
+        </div>
       </div>
-
-      <div class="hr"></div>
-
-      <div class="row">
-        <label class="muted">出題:</label>
-        <select id="mode">
-          <option value="random">ランダム</option>
-          <option value="sequential">順番</option>
-        </select>
-        <label class="muted">制限時間(秒):</label>
-        <input id="limit" type="number" min="0" value="20" style="width:90px" />
-        <button class="btn primary" id="startBtn">スタート</button>
-        <button class="btn" id="resetBestBtn">自己ベストリセット</button>
+      <div class="actions">
+        <button class="btn ghost" id="shareBtn">🔗 URLをコピー</button>
+        <button class="btn ghost" id="resetBestBtn">🧹 記録リセット</button>
       </div>
     </div>
 
-    <div class="card">
-      <div id="qMeta" class="muted"></div>
-      <h2 id="question">スタートを押してね</h2>
-      <div id="choices" class="grid"></div>
+    <div class="grid">
+      <div class="card">
+        <div class="row space">
+          <div class="row">
+            <span class="pill">スコア <b id="score">0</b></span>
+            <span class="pill">正解数 <b id="correct">0</b></span>
+            <span class="pill">連続 <b id="streak">0</b></span>
+            <span class="pill">残り <b id="remaining">0</b></span>
+            <span class="pill">タイム <b id="time">—</b></span>
+          </div>
+          <span class="pill">ランク <b id="rank">—</b></span>
+        </div>
 
-      <div id="feedback" class="card hide"></div>
+        <div class="hr"></div>
 
-      <div class="row">
-        <button class="btn" id="skipBtn">スキップ</button>
-        <button class="btn" id="revealBtn">解説を見る</button>
-        <button class="btn primary" id="nextBtn">次へ</button>
+        <div class="row">
+          <span class="muted tiny">出題</span>
+          <select id="mode">
+            <option value="all">すべて</option>
+            <option value="Crawl">Crawl</option>
+            <option value="Index">Index</option>
+            <option value="CWV">CWV</option>
+            <option value="Rendering">Rendering</option>
+            <option value="Schema">Schema</option>
+            <option value="Logs">Logs</option>
+          </select>
+
+          <span class="muted tiny">並び</span>
+          <select id="order">
+            <option value="random">ランダム</option>
+            <option value="sequential">順番</option>
+          </select>
+
+          <span class="muted tiny">制限(秒)</span>
+          <input id="limit" type="number" min="0" value="20" />
+
+          <button class="btn primary" id="startBtn">▶️ スタート</button>
+          <button class="btn" id="importBtn">⬆️ 問題JSONを貼り付け</button>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="row space">
+          <div style="flex:1;min-width:220px">
+            <div class="muted tiny" id="progressLabel">進捗 0 / 0</div>
+            <div class="progress"><div class="bar" id="bar"></div></div>
+          </div>
+          <div class="muted tiny" id="bestBox">自己ベスト: <b id="best">0</b> / 最高ランク: <b id="bestRank">—</b></div>
+        </div>
+      </div>
+
+      <div class="card" id="qCard">
+        <div class="qmeta" id="qMeta"></div>
+        <div class="qtitle" id="question">スタートを押してね</div>
+        <div class="choices" id="choices"></div>
+
+        <div class="feedback" id="feedback"></div>
+
+        <div class="hr"></div>
+
+        <div class="row">
+          <button class="btn" id="skipBtn">⏭️ スキップ</button>
+          <button class="btn" id="revealBtn">💡 解説を見る</button>
+          <button class="btn primary" id="nextBtn">➡️ 次へ</button>
+        </div>
+
+        <div class="muted tiny" style="margin-top:10px">
+          ショートカット: <span class="kbd">1-4</span>で回答 / <span class="kbd">Enter</span>で次へ
+        </div>
       </div>
     </div>
 
-    <div class="card muted">
-      <b>カスタム方法</b>
-      <ul>
-        <li>下の <code>QUESTIONS</code> に問題を足すだけ</li>
-        <li><code>tags</code> で「Crawl」「Index」「CWV」など分類も可能</li>
-        <li>あとで「ミスだけ復習」モードも追加できる</li>
-      </ul>
+    <footer>
+      Created by <b>Takuma Oka</b> · Technical SEO Quiz
+    </footer>
+  </div>
+
+  <!-- Rank modal -->
+  <div class="overlay" id="overlay" role="dialog" aria-modal="true">
+    <div class="modal">
+      <div class="glow"></div>
+      <h3>ランクアップ！</h3>
+      <div class="big" id="rankTitle">—</div>
+      <div class="sub" id="rankSub">—</div>
+      <div class="row">
+        <button class="btn primary" id="closeModalBtn">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="confetti" id="confetti"></div>
+
+  <!-- Import modal (simple prompt-like) -->
+  <div class="overlay" id="importOverlay" role="dialog" aria-modal="true">
+    <div class="modal">
+      <div class="glow"></div>
+      <h3>問題JSONを貼り付け</h3>
+      <div class="sub">形式: [{ id, level, tags:[...], q, choices:[...], answer, explain }...]</div>
+      <div style="margin-top:10px">
+        <textarea id="importArea" style="width:100%;height:200px;border-radius:16px;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.25);color:var(--text);padding:12px;outline:none"></textarea>
+      </div>
+      <div class="row" style="justify-content:space-between;margin-top:12px">
+        <button class="btn" id="cancelImportBtn">キャンセル</button>
+        <button class="btn primary" id="applyImportBtn">適用</button>
+      </div>
     </div>
   </div>
 
 <script>
-/** ===============================
- *  問題データ（ここに足していく）
- *  =============================== */
-const QUESTIONS = [
+/** =========================================================
+ *  1) QUESTIONS（ここを100問に増やしていく）
+ *     ※ まずは動作確認用に一部だけ入れてある
+ *     ※ 「Import（JSON貼り付け）」で一気に100問投入も可能
+ *  ========================================================= */
+let QUESTIONS = [
   {
     id: "robots-vs-noindex",
     level: "Easy",
-    tags: ["Index", "Robots"],
-    q: "robots.txt でブロックしたURLに meta robots noindex を入れた。Googleはどうなる可能性が高い？",
+    tags: ["Index","Robots"],
+    q: "robots.txtでブロックしたURLに meta robots noindex を入れた。起こりやすいのは？",
     choices: [
       "noindex が確実に効き、インデックスから消える",
       "クロールできないので noindex を読めず、URLが残る可能性がある",
-      "canonical が自動で付与され、統合される",
+      "canonical が自動で付与され統合される",
       "必ず 404 扱いになる"
     ],
     answer: 1,
-    explain: "noindex はページを取得して解釈できないと効きにくい。robots.txtでブロックすると、noindexを読めずURLだけ残る/表示されるケースがある。基本は『インデックスさせたくない= noindex（クロール可）』、クロールさせたくない= robots、用途を分ける。"
+    explain: "noindexはページを取得できて初めて解釈されやすい。robotsでブロックするとnoindexを読めず、URLのみ残るケースがある。"
   },
   {
     id: "canonical-signal",
     level: "Easy",
-    tags: ["Index", "Canonical"],
-    q: "rel=canonical の役割として最も正しいのは？",
+    tags: ["Index","Canonical"],
+    q: "rel=canonical の最も正しい位置づけは？",
     choices: [
       "必ず正規URLに301される",
-      "検索エンジンに正規URLの“シグナル”を伝える（ただし必ず従うとは限らない）",
+      "正規URLの“シグナル”を伝える（必ず従うとは限らない）",
       "重複ページを自動でnoindexにする命令",
       "サイト全体のクロール頻度を上げる"
     ],
     answer: 1,
-    explain: "canonical は強制命令ではなく“ヒント/シグナル”。整合性（内部リンク、サイトマップ、リダイレクト、HTTPステータス等）も揃っていると採用されやすい。"
+    explain: "canonicalは強制ではなくヒント。内部リンク/サイトマップ/リダイレクト/ステータスなど整合性が重要。"
   },
   {
     id: "sitemap-role",
     level: "Easy",
-    tags: ["Crawl", "Sitemap"],
-    q: "XMLサイトマップの正しい位置づけは？",
+    tags: ["Crawl","Sitemap"],
+    q: "XMLサイトマップの正しい役割は？",
     choices: [
-      "必ず掲載URLがインデックスされる保証",
-      "クロール/発見を助ける手がかり（保証ではない）",
+      "掲載URLは必ずインデックスされる保証",
+      "発見/優先度のヒント（保証ではない）",
       "ランキング要因そのもの",
       "重複URLを自動削除する仕組み"
     ],
     answer: 1,
-    explain: "サイトマップは発見と優先度のヒント。インデックス可否は品質/重複/ステータスなど別要因。"
+    explain: "サイトマップは発見とクロールの手がかり。インデックスは品質/重複/ステータス等の別要因。"
   },
   {
     id: "cwv-lcp",
     level: "Medium",
-    tags: ["CWV", "Performance"],
-    q: "LCP 改善として効果が出やすい施策はどれ？",
+    tags: ["CWV","Performance"],
+    q: "LCP改善として効果が出やすいのは？",
     choices: [
       "全画像をPNGに統一する",
-      "上位コンテンツの画像/フォントを優先読み込みし、不要JSを減らす",
+      "LCP要素（ヒーロー画像等）を優先読み込みし、不要JSを減らす",
       "タイトルタグを短くする",
       "h1を複数にする"
     ],
     answer: 1,
-    explain: "LCPは“最大要素が表示されるまで”。ヒーロー画像/フォント/レンダリングブロックJS・CSSの最適化が効きやすい。"
+    explain: "LCPは最大要素表示。ヒーロー画像/フォントの優先読み込み、レンダリングブロック要素の削減が効きやすい。"
+  },
+  {
+    id: "rendering-js",
+    level: "Medium",
+    tags: ["Rendering"],
+    q: "JSレンダリング依存が強いサイトで起きやすいSEO課題は？",
+    choices: [
+      "titleタグが自動で消える",
+      "サーバーが必ず落ちる",
+      "初回HTMLに主要コンテンツが無く、発見/評価が遅れる可能性",
+      "必ずインデックスが増える"
+    ],
+    answer: 2,
+    explain: "初期HTMLが薄いと、レンダリング待ちになり発見/評価が遅れることがある。SSR/Prerender/適切な内部リンク等で補う。"
   }
 ];
 
-/** ===============================
- *  ゲームロジック
- *  =============================== */
-const $ = (id) => document.getElementById(id);
+/** =========================================================
+ *  2) ランク設計（“正解数”でランク付与）
+ *     100問にした時に映えるように設計
+ *  ========================================================= */
+const RANKS = [
+  { name: "Novice",        minCorrect: 0,   msg: "まずはウォームアップ。基礎から積み上げよう。" },
+  { name: "Apprentice",    minCorrect: 10,  msg: "いい感じ。クローラビリティ/インデックスの基本が見えてきた。" },
+  { name: "Specialist",    minCorrect: 25,  msg: "実務レベル。技術SEOの全体像が整理できている。" },
+  { name: "Senior",        minCorrect: 50,  msg: "強い。設計と改善の打ち手が安定している。" },
+  { name: "Architect",     minCorrect: 75,  msg: "設計者。大規模サイトでも戦える。" },
+  { name: "Legend",        minCorrect: 100, msg: "到達点。テクニカルSEOの総合力が高い。" }
+];
+
+const STORAGE_KEY = "techseo_state_v2";
+
+/** =========================================================
+ *  3) 状態
+ *  ========================================================= */
+const $ = (id)=>document.getElementById(id);
+
 const scoreEl = $("score");
+const correctEl = $("correct");
 const streakEl = $("streak");
 const remainingEl = $("remaining");
 const timeEl = $("time");
 const bestEl = $("best");
+const bestRankEl = $("bestRank");
+const rankEl = $("rank");
 const qMetaEl = $("qMeta");
 const qEl = $("question");
 const choicesEl = $("choices");
 const feedbackEl = $("feedback");
+const barEl = $("bar");
+const progressLabelEl = $("progressLabel");
+const bestBoxEl = $("bestBox");
 
 const modeEl = $("mode");
+const orderEl = $("order");
 const limitEl = $("limit");
 
 const startBtn = $("startBtn");
@@ -162,21 +474,40 @@ const nextBtn = $("nextBtn");
 const skipBtn = $("skipBtn");
 const revealBtn = $("revealBtn");
 const resetBestBtn = $("resetBestBtn");
+const shareBtn = $("shareBtn");
+
+const overlay = $("overlay");
+const rankTitle = $("rankTitle");
+const rankSub = $("rankSub");
+const closeModalBtn = $("closeModalBtn");
+
+const confetti = $("confetti");
+
+const importBtn = $("importBtn");
+const importOverlay = $("importOverlay");
+const importArea = $("importArea");
+const cancelImportBtn = $("cancelImportBtn");
+const applyImportBtn = $("applyImportBtn");
 
 let deck = [];
 let idx = 0;
 let current = null;
 let locked = false;
 
-let score = 0;
-let streak = 0;
-let best = Number(localStorage.getItem("techseo_best") || "0");
-
 let timer = null;
 let remaining = 0;
 
-bestEl.textContent = best;
+let score = 0;
+let correct = 0;
+let streak = 0;
 
+let best = 0;
+let bestRank = "—";
+let lastRankShown = "Novice";
+
+/** =========================================================
+ *  4) ユーティリティ
+ *  ========================================================= */
 function shuffle(arr){
   const a = [...arr];
   for (let i=a.length-1; i>0; i--){
@@ -186,152 +517,405 @@ function shuffle(arr){
   return a;
 }
 
-function buildDeck(){
-  deck = QUESTIONS.map(q => q.id);
-  if (modeEl.value === "random") deck = shuffle(deck);
-  idx = 0;
-  remainingEl.textContent = deck.length;
+function getRankNameByCorrect(c){
+  let r = RANKS[0];
+  for (const item of RANKS){
+    if (c >= item.minCorrect) r = item;
+  }
+  return r.name;
+}
+function getRankByName(name){
+  return RANKS.find(r=>r.name===name) || RANKS[0];
 }
 
-function getById(id){
-  return QUESTIONS.find(q => q.id === id);
+function updateRankUI(){
+  const rn = getRankNameByCorrect(correct);
+  rankEl.textContent = rn;
+  return rn;
+}
+
+function saveState(){
+  const state = {
+    best,
+    bestRank,
+    lastRankShown,
+    importedQuestions: QUESTIONS
+  };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return;
+    const s = JSON.parse(raw);
+    if(typeof s.best === "number") best = s.best;
+    if(typeof s.bestRank === "string") bestRank = s.bestRank;
+    if(typeof s.lastRankShown === "string") lastRankShown = s.lastRankShown;
+    if(Array.isArray(s.importedQuestions) && s.importedQuestions.length){
+      // 以前インポートした問題があれば復元
+      QUESTIONS = s.importedQuestions;
+    }
+  }catch(e){}
+}
+
+function setProgress(){
+  const total = deck.length || 0;
+  const done = Math.min(idx, total);
+  progressLabelEl.textContent = `進捗 ${done} / ${total}`;
+  const pct = total ? (done/total)*100 : 0;
+  barEl.style.width = `${pct}%`;
 }
 
 function setTimer(){
   clearInterval(timer);
   const limit = Math.max(0, Number(limitEl.value || 0));
-  if (limit === 0){
+  if(limit === 0){
     timeEl.textContent = "∞";
     return;
   }
   remaining = limit;
   timeEl.textContent = String(remaining);
-  timer = setInterval(() => {
+  timer = setInterval(()=>{
     remaining--;
     timeEl.textContent = String(remaining);
-    if (remaining <= 0){
+    if(remaining <= 0){
       clearInterval(timer);
       timeEl.textContent = "0";
-      if (!locked) judge(-1); // time out
+      if(!locked) judge(-1);
     }
-  }, 1000);
+  },1000);
 }
 
+function buildDeck(){
+  const tag = modeEl.value;
+  const filtered = QUESTIONS.filter(q=>{
+    if(tag === "all") return true;
+    return (q.tags || []).includes(tag);
+  });
+
+  // 0件対策
+  const use = filtered.length ? filtered : QUESTIONS;
+
+  deck = use.map(q=>q.id);
+  if(orderEl.value === "random") deck = shuffle(deck);
+  idx = 0;
+
+  remainingEl.textContent = String(deck.length);
+  setProgress();
+}
+
+function getById(id){
+  return QUESTIONS.find(q=>q.id===id);
+}
+
+function renderMeta(q){
+  const chips = [];
+  chips.push(`<span class="chip">Lv: ${q.level || "—"}</span>`);
+  (q.tags||[]).forEach(t=>chips.push(`<span class="chip">${t}</span>`));
+  qMetaEl.innerHTML = chips.join("");
+}
+
+/** =========================================================
+ *  5) Confetti / Rank Modal
+ *  ========================================================= */
+function popConfetti(){
+  confetti.innerHTML = "";
+  confetti.classList.add("show");
+  const colors = [
+    "rgba(124,92,255,.95)",
+    "rgba(34,193,195,.95)",
+    "rgba(255,255,255,.9)",
+    "rgba(45,212,191,.95)",
+    "rgba(251,113,133,.95)"
+  ];
+  const count = 70;
+  for(let i=0;i<count;i++){
+    const d = document.createElement("div");
+    d.className = "piece";
+    d.style.left = Math.random()*100 + "vw";
+    d.style.background = colors[Math.floor(Math.random()*colors.length)];
+    d.style.animationDuration = (1.8 + Math.random()*1.6) + "s";
+    d.style.animationDelay = (Math.random()*0.15) + "s";
+    d.style.transform = `rotate(${Math.random()*180}deg)`;
+    d.style.width = (8 + Math.random()*10) + "px";
+    d.style.height = (10 + Math.random()*16) + "px";
+    confetti.appendChild(d);
+  }
+  setTimeout(()=>confetti.classList.remove("show"), 2400);
+}
+
+function showRankModal(rankName){
+  const r = getRankByName(rankName);
+  rankTitle.textContent = rankName;
+  rankSub.textContent = `正解数 ${correct} 達成！ ${r.msg}`;
+  overlay.classList.add("show");
+  popConfetti();
+}
+
+function closeModal(){
+  overlay.classList.remove("show");
+}
+
+/** =========================================================
+ *  6) ゲーム
+ *  ========================================================= */
 function renderQuestion(){
   locked = false;
-  feedbackEl.classList.add("hide");
+  feedbackEl.classList.remove("show");
   feedbackEl.innerHTML = "";
 
   const id = deck[idx];
   current = getById(id);
 
   remainingEl.textContent = String(deck.length - idx);
-  qMetaEl.textContent = `Lv:${current.level} / ${current.tags.join(" • ")}`;
+  setProgress();
+
+  renderMeta(current);
   qEl.textContent = current.q;
 
   choicesEl.innerHTML = "";
-  current.choices.forEach((text, i) => {
+  (current.choices || []).forEach((text,i)=>{
     const b = document.createElement("button");
     b.className = "btn choice";
-    b.textContent = `${i+1}. ${text}`;
-    b.onclick = () => judge(i);
+    b.innerHTML = `<b style="opacity:.9">${i+1}.</b> ${text}`;
+    b.onclick = ()=>judge(i);
     choicesEl.appendChild(b);
   });
 
   setTimer();
 }
 
+function endScreen(){
+  clearInterval(timer);
+  qMetaEl.innerHTML = "";
+  const total = deck.length || 0;
+  const acc = total ? Math.round((correct/total)*100) : 0;
+
+  qEl.textContent = `終了！ スコア ${score} / 正解 ${correct}/${total}（正答率 ${acc}%）`;
+  choicesEl.innerHTML = "";
+
+  feedbackEl.classList.add("show");
+  feedbackEl.innerHTML = `
+    <div class="row" style="justify-content:space-between">
+      <div><b>最終ランク:</b> <span class="ok">${getRankNameByCorrect(correct)}</span></div>
+      <div class="muted">自己ベスト: <b>${best}</b> / 最高ランク: <b>${bestRank}</b></div>
+    </div>
+    <div class="hr"></div>
+    <div class="muted">次の目標: 正解数を増やしてランクアップを狙おう（100問版だと「Legend」到達が熱い）。</div>
+  `;
+  timeEl.textContent = "—";
+  remainingEl.textContent = "0";
+  setProgress();
+}
+
+function updateHUD(){
+  scoreEl.textContent = String(score);
+  correctEl.textContent = String(correct);
+  streakEl.textContent = String(streak);
+
+  const rn = updateRankUI();
+
+  // 最高記録更新
+  if(score > best){
+    best = score;
+    bestEl.textContent = String(best);
+  }
+  // 最高ランク更新
+  const currentRankIndex = RANKS.findIndex(r=>r.name===rn);
+  const bestRankIndex = RANKS.findIndex(r=>r.name===bestRank);
+  if(currentRankIndex > bestRankIndex){
+    bestRank = rn;
+    bestRankEl.textContent = bestRank;
+  }
+  saveState();
+}
+
 function judge(choiceIndex){
+  if(!current || locked) return;
   locked = true;
   clearInterval(timer);
 
+  const correctIndex = current.answer;
+  const buttons = [...choicesEl.querySelectorAll("button.choice")];
+
+  // time out or reveal
   const isTimeout = (choiceIndex === -1);
-  const correct = current.answer;
+  const isReveal = (choiceIndex === -2);
 
   let ok = false;
-  if (!isTimeout) ok = (choiceIndex === correct);
+  if(!isTimeout && !isReveal){
+    ok = (choiceIndex === correctIndex);
+  }
 
-  if (ok){
-    score += 10 + Math.min(10, streak); // 連続正解ボーナス
+  // mark
+  buttons.forEach((b,i)=>{
+    if(i === correctIndex) b.classList.add("correct");
+    if(!ok && i === choiceIndex) b.classList.add("wrong");
+  });
+
+  if(ok){
+    correct += 1;
+    score += 10 + Math.min(10, streak);
     streak += 1;
-  } else {
+  }else{
     streak = 0;
   }
 
-  scoreEl.textContent = String(score);
-  streakEl.textContent = String(streak);
-
-  feedbackEl.classList.remove("hide");
-  const status = ok ? `<b class="ok">正解</b>` : `<b class="ng">${isTimeout ? "時間切れ" : "不正解"}</b>`;
-  const correctText = current.choices[correct];
-
-  feedbackEl.innerHTML = `
-    <div>${status}</div>
-    <div class="muted">正解: <b>${correctText}</b></div>
-    <div class="hr"></div>
-    <div>${current.explain}</div>
-  `;
-
-  // 自己ベスト更新
-  if (score > best){
-    best = score;
-    localStorage.setItem("techseo_best", String(best));
-    bestEl.textContent = String(best);
+  // rank up check
+  const before = getRankNameByCorrect(correct - (ok ? 1 : 0));
+  const after  = getRankNameByCorrect(correct);
+  if(after !== before && after !== lastRankShown){
+    lastRankShown = after;
+    showRankModal(after);
   }
+
+  updateHUD();
+
+  const status = ok ? `<b class="ok">正解</b>` : `<b class="ng">${isTimeout ? "時間切れ" : (isReveal ? "解説表示" : "不正解")}</b>`;
+  feedbackEl.classList.add("show");
+  feedbackEl.innerHTML = `
+    <div class="row" style="justify-content:space-between;align-items:flex-start">
+      <div>${status} <span class="muted">（正解: ${correctIndex+1}）</span></div>
+      <div class="muted">タグ: ${(current.tags||[]).join(", ")}</div>
+    </div>
+    <div class="hr"></div>
+    <div>${current.explain || ""}</div>
+  `;
 }
 
 function next(){
   clearInterval(timer);
-  if (!deck.length) return;
+  if(!deck.length) return;
   idx++;
-  if (idx >= deck.length){
-    qMetaEl.textContent = "Finished!";
-    qEl.textContent = `終了！スコア: ${score}（自己ベスト: ${best}）`;
-    choicesEl.innerHTML = "";
-    timeEl.textContent = "—";
-    remainingEl.textContent = "0";
+  if(idx >= deck.length){
+    endScreen();
     return;
   }
   renderQuestion();
 }
 
 function start(){
+  // reset run stats
   score = 0;
+  correct = 0;
   streak = 0;
+  idx = 0;
+  locked = false;
+  lastRankShown = "Novice";
+
   scoreEl.textContent = "0";
+  correctEl.textContent = "0";
   streakEl.textContent = "0";
+  timeEl.textContent = "—";
+
   buildDeck();
+  updateRankUI();
+  updateHUD();
+
   renderQuestion();
 }
 
+/** =========================================================
+ *  7) Import JSON（100問を一気に投入できる）
+ *  ========================================================= */
+function openImport(){
+  importArea.value = JSON.stringify(QUESTIONS, null, 2);
+  importOverlay.classList.add("show");
+}
+function closeImport(){
+  importOverlay.classList.remove("show");
+}
+function applyImport(){
+  try{
+    const parsed = JSON.parse(importArea.value);
+    if(!Array.isArray(parsed)) throw new Error("配列ではありません");
+
+    // ざっくり検証
+    for(const q of parsed){
+      if(!q.id || !q.q || !Array.isArray(q.choices) || typeof q.answer !== "number"){
+        throw new Error("形式が不正な問題が含まれています");
+      }
+      if(q.choices.length < 2) throw new Error("choicesが少なすぎます");
+    }
+
+    QUESTIONS = parsed;
+    saveState();
+    closeImport();
+    alert(`適用しました：${QUESTIONS.length}問`);
+  }catch(e){
+    alert("JSONの形式エラー: " + e.message);
+  }
+}
+
+/** =========================================================
+ *  8) イベント
+ *  ========================================================= */
 startBtn.onclick = start;
 nextBtn.onclick = next;
 
-skipBtn.onclick = () => {
-  if (!current) return;
+skipBtn.onclick = ()=>{
+  if(!current) return;
   streak = 0;
-  streakEl.textContent = "0";
+  updateHUD();
   next();
 };
 
-revealBtn.onclick = () => {
-  if (!current || locked) return;
-  judge(-2); // reveal扱い（不正解として処理）
+revealBtn.onclick = ()=>{
+  if(!current || locked) return;
+  judge(-2);
 };
 
-resetBestBtn.onclick = () => {
-  localStorage.removeItem("techseo_best");
+resetBestBtn.onclick = ()=>{
+  localStorage.removeItem(STORAGE_KEY);
   best = 0;
+  bestRank = "—";
   bestEl.textContent = "0";
+  bestRankEl.textContent = "—";
+  alert("記録をリセットしました");
 };
 
-document.addEventListener("keydown", (e) => {
-  if (!current) return;
-  if (e.key >= "1" && e.key <= "4" && !locked){
+shareBtn.onclick = async ()=>{
+  try{
+    await navigator.clipboard.writeText(location.href);
+    shareBtn.textContent = "✅ コピーしました";
+    setTimeout(()=>shareBtn.textContent="🔗 URLをコピー", 1200);
+  }catch(e){
+    prompt("このURLをコピーして共有:", location.href);
+  }
+};
+
+closeModalBtn.onclick = closeModal;
+overlay.addEventListener("click", (e)=>{ if(e.target===overlay) closeModal(); });
+
+importBtn.onclick = openImport;
+cancelImportBtn.onclick = closeImport;
+applyImportBtn.onclick = applyImport;
+importOverlay.addEventListener("click", (e)=>{ if(e.target===importOverlay) closeImport(); });
+
+document.addEventListener("keydown",(e)=>{
+  if(overlay.classList.contains("show")){
+    if(e.key==="Escape" || e.key==="Enter") closeModal();
+    return;
+  }
+  if(importOverlay.classList.contains("show")){
+    if(e.key==="Escape") closeImport();
+    return;
+  }
+  if(!current) return;
+  if(e.key >= "1" && e.key <= "4" && !locked){
     judge(Number(e.key)-1);
   }
-  if (e.key === "Enter") next();
+  if(e.key === "Enter") next();
 });
+
+/** =========================================================
+ *  9) 初期化（保存済みがあれば復元）
+ *  ========================================================= */
+loadState();
+bestEl.textContent = String(best);
+bestRankEl.textContent = bestRank;
+
 </script>
 </body>
 </html>
