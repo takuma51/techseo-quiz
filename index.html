@@ -251,6 +251,12 @@
             <span class="pill">連続 <b id="streak">0</b></span>
             <span class="pill">残り <b id="remaining">0</b></span>
             <span class="pill">タイム <b id="time">—</b></span>
+            <span class="muted tiny">出題数</span>
+            <select id="count">
+              <option value="20">20</option>
+              <option value="50">50</option>
+              <option value="100" selected>100</option>
+            </select>
           </div>
           <span class="pill">ランク <b id="rank">—</b></span>
         </div>
@@ -304,7 +310,6 @@
 
         <div class="row">
           <button class="btn" id="skipBtn">⏭️ スキップ</button>
-          <button class="btn" id="revealBtn">💡 解説を見る</button>
           <button class="btn primary" id="nextBtn">➡️ 次へ</button>
         </div>
 
@@ -1317,7 +1322,6 @@ const limitEl = $("limit");
 const startBtn = $("startBtn");
 const nextBtn = $("nextBtn");
 const skipBtn = $("skipBtn");
-const revealBtn = $("revealBtn");
 const resetBestBtn = $("resetBestBtn");
 const shareBtn = $("shareBtn");
 
@@ -1704,11 +1708,6 @@ skipBtn.onclick = ()=>{
   streak = 0;
   updateHUD();
   next();
-};
-
-revealBtn.onclick = ()=>{
-  if(!current || locked) return;
-  judge(-2);
 };
 
 resetBestBtn.onclick = ()=>{
