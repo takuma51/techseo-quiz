@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Technical SEO Quiz</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; }
+    .wrap { max-width: 860px; margin: 0 auto; padding: 20px; }
+    .card { border: 1px solid rgba(127,127,127,.25); border-radius: 14px; padding: 16px; margin: 12px 0; }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    .btn { padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(127,127,127,.35); background: transparent; cursor: pointer; }
+    .btn:hover { filter: brightness(1.08); }
+    .btn.primary { border-color: rgba(70,120,255,.55); }
+    .grid { display: grid; gap: 10px; }
+    .choice { text-align: left; }
+    .muted { opacity: .7; }
+    .pill { display:inline-block; padding: 4px 10px; border: 1px solid rgba(127,127,127,.35); border-radius: 999px; }
+    .ok { color: #1f9d55; }
+    .ng { color: #e55353; }
+    .hide { display: none; }
+    .hr { height: 1px; background: rgba(127,127,127,.25); margin: 10px 0; }
+    input, select { padding: 8px 10px; border-radius: 10px; border: 1px solid rgba(127,127,127,.35); background: transparent; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Technical SEO Quiz</h1>
+    <p class="muted">ブラウザだけで動く／ローカル保存OK。問題はJS配列に足すだけ。</p>
+
+    <div class="card">
+      <div class="row">
+        <span class="pill">スコア: <b id="score">0</b></span>
+        <span class="pill">連続正解: <b id="streak">0</b></span>
+        <span class="pill">残り: <b id="remaining">0</b></span>
+        <span class="pill">タイム: <b id="time">—</b></span>
+        <span class="pill">自己ベスト: <b id="best">0</b></span>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="row">
+        <label class="muted">出題:</label>
+        <select id="mode">
+          <option value="random">ランダム</option>
+          <option value="sequential">順番</option>
+        </select>
+        <label class="muted">制限時間(秒):</label>
+        <input id="limit" type="number" min="0" value="20" style="width:90px" />
+        <button class="btn primary" id="startBtn">スタート</button>
+        <button class="btn" id="resetBestBtn">自己ベストリセット</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div id="qMeta" class="muted"></div>
+      <h2 id="question">スタートを押してね</h2>
+      <div id="choices" class="grid"></div>
+
+      <div id="feedback" class="card hide"></div>
+
+      <div class="row">
+        <button class="btn" id="skipBtn">スキップ</button>
+        <button class="btn" id="revealBtn">解説を見る</button>
+        <button class="btn primary" id="nextBtn">次へ</button>
+      </div>
+    </div>
+
+    <div class="card muted">
+      <b>カスタム方法</b>
+      <ul>
+        <li>下の <code>QUESTIONS</code> に問題を足すだけ</li>
+        <li><code>tags</code> で「Crawl」「Index」「CWV」など分類も可能</li>
+        <li>あとで「ミスだけ復習」モードも追加できる</li>
+      </ul>
+    </div>
+  </div>
+
+<script>
+/** ===============================
+ *  問題データ（ここに足していく）
+ *  =============================== */
+const QUESTIONS = [
+  {
+    id: "robots-vs-noindex",
+    level: "Easy",
+    tags: ["Index", "Robots"],
+    q: "robots.txt でブロックしたURLに meta robots noindex を入れた。Googleはどうなる可能性が高い？",
+    choices: [
+      "noindex が確実に効き、インデックスから消える",
+      "クロールできないので noindex を読めず、URLが残る可能性がある",
+      "canonical が自動で付与され、統合される",
+      "必ず 404 扱いになる"
+    ],
+    answer: 1,
+    explain: "noindex はページを取得して解釈できないと効きにくい。robots.txtでブロックすると、noindexを読めずURLだけ残る/表示されるケースがある。基本は『インデックスさせたくない= noindex（クロール可）』、クロールさせたくない= robots、用途を分ける。"
+  },
+  {
+    id: "canonical-signal",
+    level: "Easy",
+    tags: ["Index", "Canonical"],
+    q: "rel=canonical の役割として最も正しいのは？",
+    choices: [
+      "必ず正規URLに301される",
+      "検索エンジンに正規URLの“シグナル”を伝える（ただし必ず従うとは限らない）",
+      "重複ページを自動でnoindexにする命令",
+      "サイト全体のクロール頻度を上げる"
+    ],
+    answer: 1,
+    explain: "canonical は強制命令ではなく“ヒント/シグナル”。整合性（内部リンク、サイトマップ、リダイレクト、HTTPステータス等）も揃っていると採用されやすい。"
+  },
+  {
+    id: "sitemap-role",
+    level: "Easy",
+    tags: ["Crawl", "Sitemap"],
+    q: "XMLサイトマップの正しい位置づけは？",
+    choices: [
+      "必ず掲載URLがインデックスされる保証",
+      "クロール/発見を助ける手がかり（保証ではない）",
+      "ランキング要因そのもの",
+      "重複URLを自動削除する仕組み"
+    ],
+    answer: 1,
+    explain: "サイトマップは発見と優先度のヒント。インデックス可否は品質/重複/ステータスなど別要因。"
+  },
+  {
+    id: "cwv-lcp",
+    level: "Medium",
+    tags: ["CWV", "Performance"],
+    q: "LCP 改善として効果が出やすい施策はどれ？",
+    choices: [
+      "全画像をPNGに統一する",
+      "上位コンテンツの画像/フォントを優先読み込みし、不要JSを減らす",
+      "タイトルタグを短くする",
+      "h1を複数にする"
+    ],
+    answer: 1,
+    explain: "LCPは“最大要素が表示されるまで”。ヒーロー画像/フォント/レンダリングブロックJS・CSSの最適化が効きやすい。"
+  }
+];
+
+/** ===============================
+ *  ゲームロジック
+ *  =============================== */
+const $ = (id) => document.getElementById(id);
+const scoreEl = $("score");
+const streakEl = $("streak");
+const remainingEl = $("remaining");
+const timeEl = $("time");
+const bestEl = $("best");
+const qMetaEl = $("qMeta");
+const qEl = $("question");
+const choicesEl = $("choices");
+const feedbackEl = $("feedback");
+
+const modeEl = $("mode");
+const limitEl = $("limit");
+
+const startBtn = $("startBtn");
+const nextBtn = $("nextBtn");
+const skipBtn = $("skipBtn");
+const revealBtn = $("revealBtn");
+const resetBestBtn = $("resetBestBtn");
+
+let deck = [];
+let idx = 0;
+let current = null;
+let locked = false;
+
+let score = 0;
+let streak = 0;
+let best = Number(localStorage.getItem("techseo_best") || "0");
+
+let timer = null;
+let remaining = 0;
+
+bestEl.textContent = best;
+
+function shuffle(arr){
+  const a = [...arr];
+  for (let i=a.length-1; i>0; i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function buildDeck(){
+  deck = QUESTIONS.map(q => q.id);
+  if (modeEl.value === "random") deck = shuffle(deck);
+  idx = 0;
+  remainingEl.textContent = deck.length;
+}
+
+function getById(id){
+  return QUESTIONS.find(q => q.id === id);
+}
+
+function setTimer(){
+  clearInterval(timer);
+  const limit = Math.max(0, Number(limitEl.value || 0));
+  if (limit === 0){
+    timeEl.textContent = "∞";
+    return;
+  }
+  remaining = limit;
+  timeEl.textContent = String(remaining);
+  timer = setInterval(() => {
+    remaining--;
+    timeEl.textContent = String(remaining);
+    if (remaining <= 0){
+      clearInterval(timer);
+      timeEl.textContent = "0";
+      if (!locked) judge(-1); // time out
+    }
+  }, 1000);
+}
+
+function renderQuestion(){
+  locked = false;
+  feedbackEl.classList.add("hide");
+  feedbackEl.innerHTML = "";
+
+  const id = deck[idx];
+  current = getById(id);
+
+  remainingEl.textContent = String(deck.length - idx);
+  qMetaEl.textContent = `Lv:${current.level} / ${current.tags.join(" • ")}`;
+  qEl.textContent = current.q;
+
+  choicesEl.innerHTML = "";
+  current.choices.forEach((text, i) => {
+    const b = document.createElement("button");
+    b.className = "btn choice";
+    b.textContent = `${i+1}. ${text}`;
+    b.onclick = () => judge(i);
+    choicesEl.appendChild(b);
+  });
+
+  setTimer();
+}
+
+function judge(choiceIndex){
+  locked = true;
+  clearInterval(timer);
+
+  const isTimeout = (choiceIndex === -1);
+  const correct = current.answer;
+
+  let ok = false;
+  if (!isTimeout) ok = (choiceIndex === correct);
+
+  if (ok){
+    score += 10 + Math.min(10, streak); // 連続正解ボーナス
+    streak += 1;
+  } else {
+    streak = 0;
+  }
+
+  scoreEl.textContent = String(score);
+  streakEl.textContent = String(streak);
+
+  feedbackEl.classList.remove("hide");
+  const status = ok ? `<b class="ok">正解</b>` : `<b class="ng">${isTimeout ? "時間切れ" : "不正解"}</b>`;
+  const correctText = current.choices[correct];
+
+  feedbackEl.innerHTML = `
+    <div>${status}</div>
+    <div class="muted">正解: <b>${correctText}</b></div>
+    <div class="hr"></div>
+    <div>${current.explain}</div>
+  `;
+
+  // 自己ベスト更新
+  if (score > best){
+    best = score;
+    localStorage.setItem("techseo_best", String(best));
+    bestEl.textContent = String(best);
+  }
+}
+
+function next(){
+  clearInterval(timer);
+  if (!deck.length) return;
+  idx++;
+  if (idx >= deck.length){
+    qMetaEl.textContent = "Finished!";
+    qEl.textContent = `終了！スコア: ${score}（自己ベスト: ${best}）`;
+    choicesEl.innerHTML = "";
+    timeEl.textContent = "—";
+    remainingEl.textContent = "0";
+    return;
+  }
+  renderQuestion();
+}
+
+function start(){
+  score = 0;
+  streak = 0;
+  scoreEl.textContent = "0";
+  streakEl.textContent = "0";
+  buildDeck();
+  renderQuestion();
+}
+
+startBtn.onclick = start;
+nextBtn.onclick = next;
+
+skipBtn.onclick = () => {
+  if (!current) return;
+  streak = 0;
+  streakEl.textContent = "0";
+  next();
+};
+
+revealBtn.onclick = () => {
+  if (!current || locked) return;
+  judge(-2); // reveal扱い（不正解として処理）
+};
+
+resetBestBtn.onclick = () => {
+  localStorage.removeItem("techseo_best");
+  best = 0;
+  bestEl.textContent = "0";
+};
+
+document.addEventListener("keydown", (e) => {
+  if (!current) return;
+  if (e.key >= "1" && e.key <= "4" && !locked){
+    judge(Number(e.key)-1);
+  }
+  if (e.key === "Enter") next();
+});
+</script>
+</body>
+</html>
