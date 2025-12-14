@@ -1442,14 +1442,16 @@ function buildDeck(){
     if(tag === "all") return true;
     return (q.tags || []).includes(tag);
   });
-
-  // 0件対策
   const use = filtered.length ? filtered : QUESTIONS;
 
   deck = use.map(q=>q.id);
   if(orderEl.value === "random") deck = shuffle(deck);
-  idx = 0;
 
+  const countEl = document.getElementById("count");
+  const n = Math.max(1, Number(countEl?.value || deck.length));
+  deck = deck.slice(0, n);
+
+  idx = 0;
   remainingEl.textContent = String(deck.length);
   setProgress();
 }
