@@ -223,6 +223,14 @@
 
     footer{margin-top:18px;text-align:center;color:var(--muted);font-size:12px}
     .tiny{font-size:12px}
+    .select-in-pill{
+      margin-left:8px;
+      padding:6px 10px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.18);
+      background: rgba(0,0,0,.18);
+      color: var(--text);
+}
   </style>
 </head>
 
@@ -251,12 +259,14 @@
             <span class="pill">連続 <b id="streak">0</b></span>
             <span class="pill">残り <b id="remaining">0</b></span>
             <span class="pill">タイム <b id="time">—</b></span>
-            <span class="muted tiny">出題数</span>
-            <select id="count">
-              <option value="20">20</option>
-              <option value="50">50</option>
-              <option value="100" selected>100</option>
-            </select>
+            <span class="pill">
+              出題数
+              <select id="count" class="select-in-pill">
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100" selected>100</option>
+              </select>
+            </span>
           </div>
           <span class="pill">ランク <b id="rank">—</b></span>
         </div>
@@ -285,7 +295,6 @@
           <input id="limit" type="number" min="0" value="20" />
 
           <button class="btn primary" id="startBtn">▶️ スタート</button>
-          <button class="btn" id="importBtn">⬆️ 問題JSONを貼り付け</button>
         </div>
 
         <div class="hr"></div>
@@ -338,23 +347,6 @@
   </div>
 
   <div class="confetti" id="confetti"></div>
-
-  <!-- Import modal (simple prompt-like) -->
-  <div class="overlay" id="importOverlay" role="dialog" aria-modal="true">
-    <div class="modal">
-      <div class="glow"></div>
-      <h3>問題JSONを貼り付け</h3>
-      <div class="sub">形式: [{ id, level, tags:[...], q, choices:[...], answer, explain }...]</div>
-      <div style="margin-top:10px">
-        <textarea id="importArea" style="width:100%;height:200px;border-radius:16px;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.25);color:var(--text);padding:12px;outline:none"></textarea>
-      </div>
-      <div class="row" style="justify-content:space-between;margin-top:12px">
-        <button class="btn" id="cancelImportBtn">キャンセル</button>
-        <button class="btn primary" id="applyImportBtn">適用</button>
-      </div>
-    </div>
-  </div>
-
 <script>
 /** =========================================================
  *  1) QUESTIONS（ここを100問に増やしていく）
@@ -1332,12 +1324,6 @@ const closeModalBtn = $("closeModalBtn");
 
 const confetti = $("confetti");
 
-const importBtn = $("importBtn");
-const importOverlay = $("importOverlay");
-const importArea = $("importArea");
-const cancelImportBtn = $("cancelImportBtn");
-const applyImportBtn = $("applyImportBtn");
-
 let deck = [];
 let idx = 0;
 let current = null;
@@ -1384,12 +1370,7 @@ function updateRankUI(){
 }
 
 function saveState(){
-  const state = {
-    best,
-    bestRank,
-    lastRankShown,
-    importedQuestions: QUESTIONS
-  };
+  const state = { best, bestRank, lastRankShown };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
@@ -1668,38 +1649,6 @@ function start(){
 }
 
 /** =========================================================
- *  7) Import JSON（100問を一気に投入できる）
- *  ========================================================= */
-function openImport(){
-  importArea.value = JSON.stringify(QUESTIONS, null, 2);
-  importOverlay.classList.add("show");
-}
-function closeImport(){
-  importOverlay.classList.remove("show");
-}
-function applyImport(){
-  try{
-    const parsed = JSON.parse(importArea.value);
-    if(!Array.isArray(parsed)) throw new Error("配列ではありません");
-
-    // ざっくり検証
-    for(const q of parsed){
-      if(!q.id || !q.q || !Array.isArray(q.choices) || typeof q.answer !== "number"){
-        throw new Error("形式が不正な問題が含まれています");
-      }
-      if(q.choices.length < 2) throw new Error("choicesが少なすぎます");
-    }
-
-    QUESTIONS = parsed;
-    saveState();
-    closeImport();
-    alert(`適用しました：${QUESTIONS.length}問`);
-  }catch(e){
-    alert("JSONの形式エラー: " + e.message);
-  }
-}
-
-/** =========================================================
  *  8) イベント
  *  ========================================================= */
 startBtn.onclick = start;
@@ -1713,14 +1662,14 @@ skipBtn.onclick = ()=>{
 };
 
 resetBestBtn.onclick = ()=>{
-  localStorage.removeItem(STORAGE_KEY);
   best = 0;
   bestRank = "—";
+  lastRankShown = "Novice";
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ best, bestRank, lastRankShown }));
   bestEl.textContent = "0";
   bestRankEl.textContent = "—";
   alert("記録をリセットしました");
 };
-
 shareBtn.onclick = async ()=>{
   try{
     await navigator.clipboard.writeText(location.href);
@@ -1734,18 +1683,9 @@ shareBtn.onclick = async ()=>{
 closeModalBtn.onclick = closeModal;
 overlay.addEventListener("click", (e)=>{ if(e.target===overlay) closeModal(); });
 
-importBtn.onclick = openImport;
-cancelImportBtn.onclick = closeImport;
-applyImportBtn.onclick = applyImport;
-importOverlay.addEventListener("click", (e)=>{ if(e.target===importOverlay) closeImport(); });
-
 document.addEventListener("keydown",(e)=>{
   if(overlay.classList.contains("show")){
     if(e.key==="Escape" || e.key==="Enter") closeModal();
-    return;
-  }
-  if(importOverlay.classList.contains("show")){
-    if(e.key==="Escape") closeImport();
     return;
   }
   if(!current) return;
