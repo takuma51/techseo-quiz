@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Technical SEO Quiz</title>
 
-  <!-- SNS向け（最低限） -->
   <meta property="og:title" content="Technical SEO Quiz" />
   <meta property="og:description" content="Browser-based Technical SEO quiz game (Crawl / Index / CWV / Canonical / Rendering)." />
   <meta property="og:url" content="https://takuma51.github.io/techseo-quiz/" />
@@ -16,7 +15,6 @@
       --bg0:#0b1020;
       --bg1:#0e1630;
       --card:rgba(255,255,255,.06);
-      --card2:rgba(255,255,255,.085);
       --stroke:rgba(255,255,255,.12);
       --text:rgba(255,255,255,.92);
       --muted:rgba(255,255,255,.66);
@@ -40,15 +38,12 @@
         linear-gradient(180deg, var(--bg0), var(--bg1));
       overflow-x:hidden;
     }
-    a{color:inherit}
     .wrap{max-width:980px;margin:0 auto;padding:26px 18px 80px}
     .topbar{
       display:flex;align-items:center;justify-content:space-between;gap:10px;
       margin-bottom:14px;
     }
-    .brand{
-      display:flex;align-items:center;gap:12px;
-    }
+    .brand{display:flex;align-items:center;gap:12px;}
     .logo{
       width:40px;height:40px;border-radius:14px;
       background: linear-gradient(135deg, rgba(124,92,255,.95), rgba(34,193,195,.9));
@@ -74,10 +69,7 @@
       padding:16px;
       backdrop-filter: blur(12px);
     }
-    .grid{
-      display:grid;gap:14px;
-      grid-template-columns: 1.1fr .9fr;
-    }
+    .grid{display:grid;gap:14px;grid-template-columns: 1.1fr .9fr;}
     @media (max-width: 920px){ .grid{grid-template-columns:1fr} }
 
     .pill{
@@ -112,18 +104,16 @@
       background: linear-gradient(135deg, rgba(124,92,255,.34), rgba(34,193,195,.16));
     }
     .btn.ghost{background: transparent}
-    .btn.good{border-color: rgba(45,212,191,.55)}
-    .btn.bad{border-color: rgba(251,113,133,.55)}
 
-    select,input{
+    input{
       border:1px solid var(--stroke);
       background: rgba(255,255,255,.05);
       color:var(--text);
       border-radius: 14px;
       padding:10px 12px;
       outline:none;
+      width:110px;
     }
-    input{width:110px}
 
     .progress{
       height:10px;border-radius:999px;background:rgba(255,255,255,.08);
@@ -170,67 +160,8 @@
     .ok{color:var(--ok)} .ng{color:var(--ng)}
     .kbd{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:12px}
 
-    /* Modal */
-    .overlay{
-      position:fixed; inset:0;
-      background: rgba(0,0,0,.55);
-      display:none;
-      align-items:center; justify-content:center;
-      padding:20px;
-      z-index:50;
-    }
-    .overlay.show{display:flex}
-    .modal{
-      width:min(560px, 100%);
-      border-radius: 24px;
-      border:1px solid rgba(255,255,255,.18);
-      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.06));
-      box-shadow: 0 28px 90px rgba(0,0,0,.55);
-      padding:18px;
-      position:relative;
-      overflow:hidden;
-    }
-    .modal h3{margin:0 0 6px;font-size:18px}
-    .modal .big{font-size:28px;margin:6px 0 10px}
-    .modal .sub{color:var(--muted);font-size:13px}
-    .modal .row{margin-top:12px;justify-content:flex-end}
-    .glow{
-      position:absolute; inset:-80px;
-      background: radial-gradient(600px 320px at 40% 20%, rgba(124,92,255,.45), transparent 60%),
-                  radial-gradient(520px 280px at 80% 10%, rgba(34,193,195,.35), transparent 62%);
-      filter: blur(10px);
-      opacity:.85;
-      pointer-events:none;
-    }
-
-    /* Confetti */
-    .confetti{
-      position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:60;
-      display:none;
-    }
-    .confetti.show{display:block}
-    .piece{
-      position:absolute;
-      width:10px;height:16px;
-      border-radius: 4px;
-      opacity:.95;
-      top:-20px;
-      animation: fall linear forwards;
-    }
-    @keyframes fall{
-      to{ transform: translateY(calc(100vh + 40px)) rotate(720deg); }
-    }
-
     footer{margin-top:18px;text-align:center;color:var(--muted);font-size:12px}
     .tiny{font-size:12px}
-    .select-in-pill{
-      margin-left:8px;
-      padding:6px 10px;
-      border-radius:12px;
-      border:1px solid rgba(255,255,255,.18);
-      background: rgba(0,0,0,.18);
-      color: var(--text);
-}
   </style>
 </head>
 
@@ -241,12 +172,11 @@
         <div class="logo"></div>
         <div>
           <h1>Technical SEO Quiz</h1>
-          <div class="subtitle">ブラウザだけで動く／URL共有OK。ランクで成長が見えるクイズ。</div>
+          <div class="subtitle">Udemy受講生向け：30問でサクッと復習テスト</div>
         </div>
       </div>
       <div class="actions">
         <button class="btn ghost" id="shareBtn">🔗 URLをコピー</button>
-        <button class="btn ghost" id="resetBestBtn">🧹 記録リセット</button>
       </div>
     </div>
 
@@ -259,35 +189,14 @@
             <span class="pill">連続 <b id="streak">0</b></span>
             <span class="pill">残り <b id="remaining">0</b></span>
             <span class="pill">タイム <b id="time">—</b></span>
-            <span class="pill">
-              出題数
-              <select id="count" class="select-in-pill">
-                <option value="20">20</option>
-                <option value="50">50</option>
-                <option value="100" selected>100</option>
-              </select>
-            </span>
           </div>
-          <span class="pill">ランク <b id="rank">—</b></span>
         </div>
 
         <div class="hr"></div>
 
         <div class="row">
-          <span class="muted tiny">出題</span>
-          <select id="mode">
-            <option value="all">すべて</option>
-            <option value="Crawl">Crawl</option>
-            <option value="Index">Index</option>
-            <option value="CWV">CWV</option>
-            <option value="Rendering">Rendering</option>
-            <option value="Schema">Schema</option>
-            <option value="Logs">Logs</option>
-          </select>
-
           <span class="muted tiny">制限(秒)</span>
           <input id="limit" type="number" min="0" value="20" />
-
           <button class="btn primary" id="startBtn">▶️ スタート</button>
         </div>
 
@@ -295,10 +204,10 @@
 
         <div class="row space">
           <div style="flex:1;min-width:220px">
-            <div class="muted tiny" id="progressLabel">進捗 0 / 0</div>
+            <div class="muted tiny" id="progressLabel">進捗 0 / 30</div>
             <div class="progress"><div class="bar" id="bar"></div></div>
           </div>
-          <div class="muted tiny" id="bestBox">自己ベスト: <b id="best">0</b> / 最高ランク: <b id="bestRank">—</b></div>
+          <div class="muted tiny">毎回ランダム出題（固定30問）</div>
         </div>
       </div>
 
@@ -327,26 +236,10 @@
     </footer>
   </div>
 
-  <!-- Rank modal -->
-  <div class="overlay" id="overlay" role="dialog" aria-modal="true">
-    <div class="modal">
-      <div class="glow"></div>
-      <h3>ランクアップ！</h3>
-      <div class="big" id="rankTitle">—</div>
-      <div class="sub" id="rankSub">—</div>
-      <div class="row">
-        <button class="btn primary" id="closeModalBtn">OK</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="confetti" id="confetti"></div>
 <script>
 /** =========================================================
- *  1) QUESTIONS（ここを100問に増やしていく）
- *     ※ まずは動作確認用に一部だけ入れてある
- *     ※ 「Import（JSON貼り付け）」で一気に100問投入も可能
- *  ========================================================= */
+ * QUESTIONS（ここに今の100問をそのまま置けばOK）
+ * ========================================================= */
 let QUESTIONS = [
   {
     "id": "q001",
@@ -1266,23 +1159,10 @@ let QUESTIONS = [
 ];
 
 /** =========================================================
- *  2) ランク設計（“正解数”でランク付与）
- *     100問にした時に映えるように設計
- *  ========================================================= */
-const RANKS = [
-  { name: "Novice",        minCorrect: 0,   msg: "まずはウォームアップ。基礎から積み上げよう。" },
-  { name: "Apprentice",    minCorrect: 10,  msg: "いい感じ。クローラビリティ/インデックスの基本が見えてきた。" },
-  { name: "Specialist",    minCorrect: 25,  msg: "実務レベル。技術SEOの全体像が整理できている。" },
-  { name: "Senior",        minCorrect: 50,  msg: "強い。設計と改善の打ち手が安定している。" },
-  { name: "Architect",     minCorrect: 75,  msg: "設計者。大規模サイトでも戦える。" },
-  { name: "Legend",        minCorrect: 100, msg: "到達点。テクニカルSEOの総合力が高い。" }
-];
+ * 状態
+ * ========================================================= */
+const FIXED_COUNT = 30;
 
-const STORAGE_KEY = "techseo_state_v2";
-
-/** =========================================================
- *  3) 状態
- *  ========================================================= */
 const $ = (id)=>document.getElementById(id);
 
 const scoreEl = $("score");
@@ -1290,32 +1170,18 @@ const correctEl = $("correct");
 const streakEl = $("streak");
 const remainingEl = $("remaining");
 const timeEl = $("time");
-const bestEl = $("best");
-const bestRankEl = $("bestRank");
-const rankEl = $("rank");
 const qMetaEl = $("qMeta");
 const qEl = $("question");
 const choicesEl = $("choices");
 const feedbackEl = $("feedback");
 const barEl = $("bar");
 const progressLabelEl = $("progressLabel");
-const bestBoxEl = $("bestBox");
 
-const modeEl = $("mode");
 const limitEl = $("limit");
-
 const startBtn = $("startBtn");
 const nextBtn = $("nextBtn");
 const skipBtn = $("skipBtn");
-const resetBestBtn = $("resetBestBtn");
 const shareBtn = $("shareBtn");
-
-const overlay = $("overlay");
-const rankTitle = $("rankTitle");
-const rankSub = $("rankSub");
-const closeModalBtn = $("closeModalBtn");
-
-const confetti = $("confetti");
 
 let deck = [];
 let idx = 0;
@@ -1329,13 +1195,9 @@ let score = 0;
 let correct = 0;
 let streak = 0;
 
-let best = 0;
-let bestRank = "—";
-let lastRankShown = "Novice";
-
 /** =========================================================
- *  4) ユーティリティ
- *  ========================================================= */
+ * Utils
+ * ========================================================= */
 function shuffle(arr){
   const a = [...arr];
   for (let i=a.length-1; i>0; i--){
@@ -1345,45 +1207,8 @@ function shuffle(arr){
   return a;
 }
 
-function getRankNameByCorrect(c){
-  let r = RANKS[0];
-  for (const item of RANKS){
-    if (c >= item.minCorrect) r = item;
-  }
-  return r.name;
-}
-function getRankByName(name){
-  return RANKS.find(r=>r.name===name) || RANKS[0];
-}
-
-function updateRankUI(){
-  const rn = getRankNameByCorrect(correct);
-  rankEl.textContent = rn;
-  return rn;
-}
-
-function saveState(){
-  const state = { best, bestRank, lastRankShown };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-}
-
-function loadState(){
-  try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if(!raw) return;
-    const s = JSON.parse(raw);
-    if(typeof s.best === "number") best = s.best;
-    if(typeof s.bestRank === "string") bestRank = s.bestRank;
-    if(typeof s.lastRankShown === "string") lastRankShown = s.lastRankShown;
-    if(Array.isArray(s.importedQuestions) && s.importedQuestions.length){
-      // 以前インポートした問題があれば復元
-      QUESTIONS = s.importedQuestions;
-    }
-  }catch(e){}
-}
-
 function setProgress(){
-  const total = deck.length || 0;
+  const total = deck.length || FIXED_COUNT;
   const done = Math.min(idx, total);
   progressLabelEl.textContent = `進捗 ${done} / ${total}`;
   const pct = total ? (done/total)*100 : 0;
@@ -1405,29 +1230,9 @@ function setTimer(){
     if(remaining <= 0){
       clearInterval(timer);
       timeEl.textContent = "0";
-      if(!locked) judge(-1);
+      if(!locked) judge(-1); // timeout
     }
   },1000);
-}
-
-function buildDeck(){
-  const tag = modeEl.value;
-  const filtered = QUESTIONS.filter(q=>{
-    if(tag === "all") return true;
-    return (q.tags || []).includes(tag);
-  });
-  const use = filtered.length ? filtered : QUESTIONS;
-
-  deck = use.map(q=>q.id);
-  if(orderEl.value === "random") deck = shuffle(deck);
-
-  const countEl = document.getElementById("count");
-  const n = Math.max(1, Number(countEl?.value || deck.length));
-  deck = deck.slice(0, n);
-
-  idx = 0;
-  remainingEl.textContent = String(deck.length);
-  setProgress();
 }
 
 function getById(id){
@@ -1436,55 +1241,29 @@ function getById(id){
 
 function renderMeta(q){
   const chips = [];
-  chips.push(`<span class="chip">Lv: ${q.level || "—"}</span>`);
+  if(q.level) chips.push(`<span class="chip">Lv: ${q.level}</span>`);
   (q.tags||[]).forEach(t=>chips.push(`<span class="chip">${t}</span>`));
   qMetaEl.innerHTML = chips.join("");
 }
 
 /** =========================================================
- *  5) Confetti / Rank Modal
- *  ========================================================= */
-function popConfetti(){
-  confetti.innerHTML = "";
-  confetti.classList.add("show");
-  const colors = [
-    "rgba(124,92,255,.95)",
-    "rgba(34,193,195,.95)",
-    "rgba(255,255,255,.9)",
-    "rgba(45,212,191,.95)",
-    "rgba(251,113,133,.95)"
-  ];
-  const count = 70;
-  for(let i=0;i<count;i++){
-    const d = document.createElement("div");
-    d.className = "piece";
-    d.style.left = Math.random()*100 + "vw";
-    d.style.background = colors[Math.floor(Math.random()*colors.length)];
-    d.style.animationDuration = (1.8 + Math.random()*1.6) + "s";
-    d.style.animationDelay = (Math.random()*0.15) + "s";
-    d.style.transform = `rotate(${Math.random()*180}deg)`;
-    d.style.width = (8 + Math.random()*10) + "px";
-    d.style.height = (10 + Math.random()*16) + "px";
-    confetti.appendChild(d);
-  }
-  setTimeout(()=>confetti.classList.remove("show"), 2400);
+ * Core
+ * ========================================================= */
+function buildDeck(){
+  // 毎回ランダム（orderEl等は不要）
+  const ids = QUESTIONS.map(q=>q.id);
+  deck = shuffle(ids).slice(0, Math.min(FIXED_COUNT, ids.length));
+  idx = 0;
+  remainingEl.textContent = String(deck.length);
+  setProgress();
 }
 
-function showRankModal(rankName){
-  const r = getRankByName(rankName);
-  rankTitle.textContent = rankName;
-  rankSub.textContent = `正解数 ${correct} 達成！ ${r.msg}`;
-  overlay.classList.add("show");
-  popConfetti();
+function updateHUD(){
+  scoreEl.textContent = String(score);
+  correctEl.textContent = String(correct);
+  streakEl.textContent = String(streak);
 }
 
-function closeModal(){
-  overlay.classList.remove("show");
-}
-
-/** =========================================================
- *  6) ゲーム
- *  ========================================================= */
 function renderQuestion(){
   locked = false;
   feedbackEl.classList.remove("show");
@@ -1521,39 +1300,11 @@ function endScreen(){
   choicesEl.innerHTML = "";
 
   feedbackEl.classList.add("show");
-  feedbackEl.innerHTML = `
-    <div class="row" style="justify-content:space-between">
-      <div><b>最終ランク:</b> <span class="ok">${getRankNameByCorrect(correct)}</span></div>
-      <div class="muted">自己ベスト: <b>${best}</b> / 最高ランク: <b>${bestRank}</b></div>
-    </div>
-    <div class="hr"></div>
-    <div class="muted">次の目標: 正解数を増やしてランクアップを狙おう（100問版だと「Legend」到達が熱い）。</div>
-  `;
+  feedbackEl.innerHTML = `<div class="muted">復習おつかれ！もう一度スタートで別の30問が出ます。</div>`;
+
   timeEl.textContent = "—";
   remainingEl.textContent = "0";
   setProgress();
-}
-
-function updateHUD(){
-  scoreEl.textContent = String(score);
-  correctEl.textContent = String(correct);
-  streakEl.textContent = String(streak);
-
-  const rn = updateRankUI();
-
-  // 最高記録更新
-  if(score > best){
-    best = score;
-    bestEl.textContent = String(best);
-  }
-  // 最高ランク更新
-  const currentRankIndex = RANKS.findIndex(r=>r.name===rn);
-  const bestRankIndex = RANKS.findIndex(r=>r.name===bestRank);
-  if(currentRankIndex > bestRankIndex){
-    bestRank = rn;
-    bestRankEl.textContent = bestRank;
-  }
-  saveState();
 }
 
 function judge(choiceIndex){
@@ -1564,16 +1315,12 @@ function judge(choiceIndex){
   const correctIndex = current.answer;
   const buttons = [...choicesEl.querySelectorAll("button.choice")];
 
-  // time out or reveal
   const isTimeout = (choiceIndex === -1);
-  const isReveal = (choiceIndex === -2);
-
   let ok = false;
-  if(!isTimeout && !isReveal){
+  if(!isTimeout){
     ok = (choiceIndex === correctIndex);
   }
 
-  // mark
   buttons.forEach((b,i)=>{
     if(i === correctIndex) b.classList.add("correct");
     if(!ok && i === choiceIndex) b.classList.add("wrong");
@@ -1586,18 +1333,9 @@ function judge(choiceIndex){
   }else{
     streak = 0;
   }
-
-  // rank up check
-  const before = getRankNameByCorrect(correct - (ok ? 1 : 0));
-  const after  = getRankNameByCorrect(correct);
-  if(after !== before && after !== lastRankShown){
-    lastRankShown = after;
-    showRankModal(after);
-  }
-
   updateHUD();
 
-  const status = ok ? `<b class="ok">正解</b>` : `<b class="ng">${isTimeout ? "時間切れ" : (isReveal ? "解説表示" : "不正解")}</b>`;
+  const status = ok ? `<b class="ok">正解</b>` : `<b class="ng">${isTimeout ? "時間切れ" : "不正解"}</b>`;
   feedbackEl.classList.add("show");
   feedbackEl.innerHTML = `
     <div class="row" style="justify-content:space-between;align-items:flex-start">
@@ -1627,23 +1365,17 @@ function start(){
   streak = 0;
   idx = 0;
   locked = false;
-  lastRankShown = "Novice";
 
-  scoreEl.textContent = "0";
-  correctEl.textContent = "0";
-  streakEl.textContent = "0";
   timeEl.textContent = "—";
-
-  buildDeck();
-  updateRankUI();
   updateHUD();
 
+  buildDeck();
   renderQuestion();
 }
 
 /** =========================================================
- *  8) イベント
- *  ========================================================= */
+ * Events
+ * ========================================================= */
 startBtn.onclick = start;
 nextBtn.onclick = next;
 
@@ -1654,15 +1386,6 @@ skipBtn.onclick = ()=>{
   next();
 };
 
-resetBestBtn.onclick = ()=>{
-  best = 0;
-  bestRank = "—";
-  lastRankShown = "Novice";
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ best, bestRank, lastRankShown }));
-  bestEl.textContent = "0";
-  bestRankEl.textContent = "—";
-  alert("記録をリセットしました");
-};
 shareBtn.onclick = async ()=>{
   try{
     await navigator.clipboard.writeText(location.href);
@@ -1673,28 +1396,13 @@ shareBtn.onclick = async ()=>{
   }
 };
 
-closeModalBtn.onclick = closeModal;
-overlay.addEventListener("click", (e)=>{ if(e.target===overlay) closeModal(); });
-
 document.addEventListener("keydown",(e)=>{
-  if(overlay.classList.contains("show")){
-    if(e.key==="Escape" || e.key==="Enter") closeModal();
-    return;
-  }
   if(!current) return;
   if(e.key >= "1" && e.key <= "4" && !locked){
     judge(Number(e.key)-1);
   }
   if(e.key === "Enter") next();
 });
-
-/** =========================================================
- *  9) 初期化（保存済みがあれば復元）
- *  ========================================================= */
-loadState();
-bestEl.textContent = String(best);
-bestRankEl.textContent = bestRank;
-
 </script>
 </body>
 </html>
