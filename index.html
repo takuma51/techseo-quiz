@@ -176,7 +176,6 @@
     .helpbox{font-size:13px;line-height:1.6;color:rgba(255,255,255,.82)}
     .helpbox .muted{color:rgba(255,255,255,.66)}
 
-    /* a11y focus */
     :focus{outline:none}
     :focus-visible{
       outline: 2px solid rgba(124,92,255,.85);
@@ -184,7 +183,6 @@
       border-radius: 14px;
     }
 
-    /* modal */
     .modalOverlay{
       position:fixed; inset:0;
       background: rgba(0,0,0,.55);
@@ -219,7 +217,6 @@
       padding:12px;
       border-radius: 16px;
     }
-
   </style>
 </head>
 
@@ -241,7 +238,6 @@
     </div>
 
     <div class="grid">
-      <!-- Left: Status / Settings -->
       <div class="card">
         <div class="row space">
           <div class="row">
@@ -298,11 +294,10 @@
 
         <div class="helpbox">
           <div><b>使い方</b>：スタート → <span class="kbd">1-4</span>で回答 → <span class="kbd">Enter</span>で次へ</div>
-          <div class="muted">※ 制限(秒)は 0 で無制限。フィルタは出題範囲に反映されます。</div>
+          <div class="muted">※ 制限(秒)は 0 で無制限。フィルタは出題範囲に反映されます（不足分は補充して30問固定）。</div>
         </div>
       </div>
 
-      <!-- Right: Question -->
       <div class="card" id="qCard">
         <div class="qmeta" id="qMeta"></div>
         <div class="qtitle" id="question">スタートを押してね</div>
@@ -331,7 +326,6 @@
     </footer>
   </div>
 
-  <!-- About Modal -->
   <div class="modalOverlay" id="aboutModal" role="dialog" aria-modal="true" aria-label="このアプリについて">
     <div class="modal">
       <div class="modalHeader">
@@ -355,7 +349,6 @@
     </div>
   </div>
 
-  <!-- Tutorial Modal (first time) -->
   <div class="modalOverlay" id="tutorialModal" role="dialog" aria-modal="true" aria-label="チュートリアル">
     <div class="modal">
       <div class="modalHeader">
@@ -378,7 +371,6 @@
     </div>
   </div>
 
-  <!-- Report Modal -->
   <div class="modalOverlay" id="reportModal" role="dialog" aria-modal="true" aria-label="不具合報告">
     <div class="modal">
       <div class="modalHeader">
@@ -410,10 +402,7 @@
 /** =========================================================
  * 設定（ここだけ差し替え推奨）
  * ========================================================= */
-// TODO: あなたのフォームURLに差し替え（Google Form / Typeform / 自前フォーム等）
 const REPORT_FORM_URL = "https://okatakuma.tokyo/seo-quiz";
-
-// TODO: あなたのプライバシーポリシー & 利用規約URLに差し替え
 const PRIVACY_POLICY_URL = "https://okatakuma.tokyo/seo-quiz";
 const TERMS_URL = "https://okatakuma.tokyo/seo-quiz";
 
@@ -588,9 +577,9 @@ let score = 0;
 let correct = 0;
 let streak = 0;
 
-let startedAt = null;        // run start timestamp
-let elapsedSec = 0;          // run elapsed seconds
-let wrongTags = {};          // tag -> count
+let startedAt = null;
+let elapsedSec = 0;
+let wrongTags = {};
 
 /** =========================================================
  * Storage helpers
@@ -623,11 +612,6 @@ function shuffle(arr){
   }
   return a;
 }
-function clampInt(n, min, max){
-  const x = Math.floor(Number(n));
-  if(!Number.isFinite(x)) return min;
-  return Math.min(max, Math.max(min, x));
-}
 function uniq(arr){ return [...new Set(arr)] }
 
 function setProgress(){
@@ -653,7 +637,7 @@ function setTimer(){
     if(remaining <= 0){
       clearInterval(timer);
       timeEl.textContent = "0";
-      if(!locked) judge(-1); // timeout
+      if(!locked) judge(-1);
     }
   },1000);
 }
@@ -684,83 +668,62 @@ function formatTime(sec){
 }
 
 /** =========================================================
- * Filters / Deck
+ * Filters / Tag options
  * ========================================================= */
-function getFilteredQuestions(){
-  const level = levelFilterEl.value;
-  const tag = tagFilterEl.value;
-
-  return QUESTIONS.filter(q=>{
-    const levelOk = (level === "ALL") ? true : (q.level === level);
-    const tagOk = (tag === "ALL") ? true : ((q.tags||[]).includes(tag));
-    return levelOk && tagOk;
-  });
-}
-
 function buildTagOptions(){
   const tags = uniq(QUESTIONS.flatMap(q=>q.tags || [])).sort((a,b)=>a.localeCompare(b));
   tagFilterEl.innerHTML = `<option value="ALL">すべて</option>` + tags.map(t=>`<option value="${t}">${t}</option>`).join("");
 }
 
+/** =========================================================
+ * Deck builder（★修正版：必ず30問に補充）
+ * ========================================================= */
 function buildDeck(){
-  const levelSelId = "levelSelect"; // ←あなたの難易度selectのidに合わせる
-  const tagSelId   = "tagSelect";   // ←あなたのタグselectのidに合わせる
-
-  const levelEl = document.getElementById(levelSelId);
-  const tagEl   = document.getElementById(tagSelId);
-
-  const level = levelEl ? levelEl.value : "ALL";
-  const tag   = tagEl   ? tagEl.value   : "ALL";
+  const selectedLevel = levelFilterEl.value; // "ALL" | "Easy" | "Medium" | "Hard"
+  const selectedTag   = tagFilterEl.value;   // "ALL" or tag string
 
   const hasTag = (q, t)=> (q.tags || []).includes(t);
 
-  // 1) フィルタ適用候補
-  const filtered = QUESTIONS.filter(q=>{
-    const okLevel = (level === "ALL") ? true : (q.level === level);
-    const okTag   = (tag === "ALL")   ? true : hasTag(q, tag);
+  // 1) まず「選択フィルタ内」から取る
+  const primaryPool = QUESTIONS.filter(q=>{
+    const okLevel = (selectedLevel === "ALL") ? true : (q.level === selectedLevel);
+    const okTag   = (selectedTag === "ALL")   ? true : hasTag(q, selectedTag);
     return okLevel && okTag;
   });
 
-  // 2) “補充”の優先順位（フィルタの意味をなるべく維持）
-  //    Easy不足→Medium→Hard
-  //    Medium不足→Easy→Hard
-  //    Hard不足→Medium→Easy
-  const levelPriority = {
-    "Easy":   ["Easy", "Medium", "Hard"],
-    "Medium": ["Medium", "Easy", "Hard"],
-    "Hard":   ["Hard", "Medium", "Easy"],
+  let picked = shuffle(primaryPool.map(q=>q.id)).slice(0, Math.min(FIXED_COUNT, primaryPool.length));
+
+  // 2) 足りない場合は “レベルだけ” を広げて補充（タグは可能な限り維持）
+  const fallbackOrder = {
+    "Easy":   ["Medium", "Hard"],
+    "Medium": ["Easy", "Hard"],
+    "Hard":   ["Medium", "Easy"],
     "ALL":    ["Easy", "Medium", "Hard"]
   };
+  const fallbacks = fallbackOrder[selectedLevel] || ["Easy","Medium","Hard"];
 
-  const pri = levelPriority[level] || ["Easy","Medium","Hard"];
-
-  // 3) まずフィルタ内で取る
-  let picked = shuffle(filtered.map(q=>q.id)).slice(0, Math.min(FIXED_COUNT, filtered.length));
-
-  // 4) 不足分を優先順位に沿って補充（tagは維持しつつ、levelを広げる）
-  if (picked.length < FIXED_COUNT){
-    for(const lv of pri){
+  if(picked.length < FIXED_COUNT){
+    for(const lv of fallbacks){
       if(picked.length >= FIXED_COUNT) break;
 
-      const pool = QUESTIONS.filter(q=>{
-        // タグは維持（tag=ALLなら制限なし）
-        const okTag = (tag === "ALL") ? true : hasTag(q, tag);
-        if(!okTag) return false;
+      const pool = QUESTIONS
+        .filter(q=>{
+          const okTag = (selectedTag === "ALL") ? true : hasTag(q, selectedTag);
+          if(!okTag) return false;
 
-        // ALLの場合は全難易度、指定がある場合は lv に一致するもの
-        const okLv = (level === "ALL") ? true : (q.level === lv);
-        return okLv;
-      })
-      .map(q=>q.id)
-      .filter(id=>!picked.includes(id));
+          // ★重要：fallback中は lv を採用（selectedLevelで縛らない）
+          return (selectedLevel === "ALL") ? true : (q.level === lv);
+        })
+        .map(q=>q.id)
+        .filter(id=>!picked.includes(id));
 
       const need = FIXED_COUNT - picked.length;
       picked.push(...shuffle(pool).slice(0, need));
     }
   }
 
-  // 5) それでも足りない場合（tagが特殊で母数が少ない等）は、最後に全体から補充して必ず30にする
-  if (picked.length < FIXED_COUNT){
+  // 3) それでも足りないなら最後は全体から補充して必ず30にする
+  if(picked.length < FIXED_COUNT){
     const rest = QUESTIONS.map(q=>q.id).filter(id=>!picked.includes(id));
     picked.push(...shuffle(rest).slice(0, FIXED_COUNT - picked.length));
   }
@@ -768,8 +731,17 @@ function buildDeck(){
   deck = picked;
   idx = 0;
 
-  remainingEl.textContent = String(deck.length); // 常に30になる
+  remainingEl.textContent = String(deck.length); // 常に30
+  deckCountEl.textContent = String(deck.length); // 表示も30固定
   setProgress();
+
+  if(deck.length === 0){
+    qMetaEl.innerHTML = "";
+    qEl.textContent = "出題できる問題がありません（フィルタを変更してください）";
+    choicesEl.innerHTML = "";
+    feedbackEl.classList.add("show");
+    feedbackEl.innerHTML = `<div class="ng"><b>ヒント:</b> 難易度/タグを「すべて」に戻してみてください。</div>`;
+  }
 }
 
 /** =========================================================
@@ -811,7 +783,6 @@ function endScreen(){
   const acc = total ? Math.round((correct/total)*100) : 0;
   elapsedSec = startedAt ? (Date.now() - startedAt)/1000 : 0;
 
-  // wrong tag summary
   const sortedWrong = Object.entries(wrongTags).sort((a,b)=>b[1]-a[1]).slice(0,3);
   const wrongText = sortedWrong.length
     ? sortedWrong.map(([t,c])=>`<span class="chip">${t}: ${c}</span>`).join(" ")
@@ -820,7 +791,6 @@ function endScreen(){
   qEl.textContent = `終了！ スコア ${score} / 正解 ${correct}/${total}（正答率 ${acc}%）`;
   choicesEl.innerHTML = "";
 
-  // best score update
   const best = loadNumber(LS.best, 0);
   const newBest = Math.max(best, score);
   if(newBest !== best) save(LS.best, newBest);
@@ -875,7 +845,6 @@ function judge(choiceIndex){
     score += 10 + Math.min(10, streak);
     streak += 1;
   }else{
-    // wrong tag tracking
     (current.tags||[]).forEach(t=>{
       wrongTags[t] = (wrongTags[t] || 0) + 1;
     });
@@ -907,12 +876,10 @@ function next(){
 }
 
 function start(){
-  // persist settings
   save(LS.limit, Number(limitEl.value || 0));
   save(LS.level, levelFilterEl.value);
   save(LS.tag, tagFilterEl.value);
 
-  // reset run stats
   score = 0;
   correct = 0;
   streak = 0;
@@ -929,14 +896,10 @@ function start(){
 }
 
 /** =========================================================
- * Share / About / Report
+ * Modals / Share / Report template
  * ========================================================= */
-function openModal(el){
-  el.classList.add("show");
-}
-function closeModal(el){
-  el.classList.remove("show");
-}
+function openModal(el){ el.classList.add("show"); }
+function closeModal(el){ el.classList.remove("show"); }
 
 function buildReportTemplate(){
   const level = levelFilterEl.value;
@@ -1009,20 +972,18 @@ document.addEventListener("keydown",(e)=>{
   if(e.key === "Enter") next();
 });
 
-/** Filter change: no auto start, but deck count updates preview */
+/** Filter change */
 function onFilterChanged(){
   save(LS.level, levelFilterEl.value);
   save(LS.tag, tagFilterEl.value);
-  // show how many available
-  const pool = getFilteredQuestions();
-  deckCountEl.textContent = String(Math.min(FIXED_COUNT, pool.length));
+
+  // 表示は固定30（不足分は補充して30問）
+  deckCountEl.textContent = String(FIXED_COUNT);
 }
 levelFilterEl.onchange = onFilterChanged;
 tagFilterEl.onchange = onFilterChanged;
 
-limitEl.onchange = ()=>{
-  save(LS.limit, Number(limitEl.value || 0));
-};
+limitEl.onchange = ()=>{ save(LS.limit, Number(limitEl.value || 0)); };
 
 /** About modal */
 aboutBtn.onclick = ()=>openModal(aboutModal);
@@ -1031,7 +992,6 @@ aboutModal.addEventListener("click",(e)=>{ if(e.target === aboutModal) closeModa
 
 /** Report modal */
 reportBtn.onclick = ()=>{
-  // set link
   openReportForm.href = REPORT_FORM_URL || "#";
   openReportForm.classList.toggle("danger", !REPORT_FORM_URL || REPORT_FORM_URL.includes("example.com"));
   buildReportTemplate();
@@ -1067,34 +1027,26 @@ tutorialModal.addEventListener("click",(e)=>{ if(e.target === tutorialModal) clo
 
 /** Init */
 (function init(){
-  // bind policy urls
   privacyLink.href = PRIVACY_POLICY_URL;
   termsLink.href = TERMS_URL;
 
-  // build tag select
   buildTagOptions();
 
-  // load saved settings
   const savedLimit = loadNumber(LS.limit, 20);
   limitEl.value = String(savedLimit);
 
   const savedLevel = localStorage.getItem(LS.level) || "ALL";
   const savedTag = localStorage.getItem(LS.tag) || "ALL";
   if(["ALL","Easy","Medium","Hard"].includes(savedLevel)) levelFilterEl.value = savedLevel;
-  // tag: set if exists
+
   const tagOptions = [...tagFilterEl.querySelectorAll("option")].map(o=>o.value);
   if(tagOptions.includes(savedTag)) tagFilterEl.value = savedTag;
 
-  // best score
   bestScoreEl.textContent = String(loadNumber(LS.best, 0));
 
-  // initial deck count preview
   onFilterChanged();
-
-  // show tutorial once
   maybeShowTutorial();
 
-  // initial state
   remainingEl.textContent = "0";
   setProgress();
 })();
