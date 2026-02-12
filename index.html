@@ -38,7 +38,8 @@
         linear-gradient(180deg, var(--bg0), var(--bg1));
       overflow-x:hidden;
     }
-    .wrap{max-width:980px;margin:0 auto;padding:26px 18px 80px}
+
+    .wrap{max-width:1040px;margin:0 auto;padding:26px 18px 80px}
     .topbar{
       display:flex;align-items:center;justify-content:space-between;gap:10px;
       margin-bottom:14px;
@@ -69,6 +70,7 @@
       padding:16px;
       backdrop-filter: blur(12px);
     }
+
     .grid{display:grid;gap:14px;grid-template-columns: 1.1fr .9fr;}
     @media (max-width: 920px){ .grid{grid-template-columns:1fr} }
 
@@ -96,6 +98,7 @@
       transition: transform .08s ease, filter .15s ease, background .15s ease;
       display:inline-flex;align-items:center;gap:8px;
       user-select:none;
+      text-decoration:none;
     }
     .btn:hover{filter:brightness(1.08)}
     .btn:active{transform: translateY(1px)}
@@ -104,16 +107,21 @@
       background: linear-gradient(135deg, rgba(124,92,255,.34), rgba(34,193,195,.16));
     }
     .btn.ghost{background: transparent}
+    .btn.danger{
+      border-color: rgba(251,113,133,.45);
+      background: rgba(251,113,133,.10);
+    }
 
-    input{
+    input, select{
       border:1px solid var(--stroke);
       background: rgba(255,255,255,.05);
       color:var(--text);
       border-radius: 14px;
       padding:10px 12px;
       outline:none;
-      width:110px;
     }
+    input{width:110px}
+    select{min-width:150px}
 
     .progress{
       height:10px;border-radius:999px;background:rgba(255,255,255,.08);
@@ -161,7 +169,57 @@
     .kbd{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:12px}
 
     footer{margin-top:18px;text-align:center;color:var(--muted);font-size:12px}
+    footer a{color:rgba(255,255,255,.78);text-decoration:none;border-bottom:1px dashed rgba(255,255,255,.25)}
+    footer a:hover{color:white}
+
     .tiny{font-size:12px}
+    .helpbox{font-size:13px;line-height:1.6;color:rgba(255,255,255,.82)}
+    .helpbox .muted{color:rgba(255,255,255,.66)}
+
+    /* a11y focus */
+    :focus{outline:none}
+    :focus-visible{
+      outline: 2px solid rgba(124,92,255,.85);
+      outline-offset: 2px;
+      border-radius: 14px;
+    }
+
+    /* modal */
+    .modalOverlay{
+      position:fixed; inset:0;
+      background: rgba(0,0,0,.55);
+      display:none;
+      align-items:center; justify-content:center;
+      padding:18px;
+      z-index: 1000;
+    }
+    .modalOverlay.show{display:flex}
+    .modal{
+      width:min(760px, 100%);
+      border-radius: 22px;
+      border:1px solid rgba(255,255,255,.14);
+      background: linear-gradient(180deg, rgba(20,28,55,.92), rgba(14,18,36,.92));
+      box-shadow: 0 22px 80px rgba(0,0,0,.55);
+      padding:16px;
+      backdrop-filter: blur(10px);
+    }
+    .modalHeader{
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+      margin-bottom:10px;
+    }
+    .modalTitle{font-size:16px;margin:0}
+    .modalBody{padding-top:4px}
+    .mono{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size:12px;
+      white-space:pre-wrap;
+      word-break:break-word;
+      background: rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.12);
+      padding:12px;
+      border-radius: 16px;
+    }
+
   </style>
 </head>
 
@@ -169,18 +227,21 @@
   <div class="wrap">
     <div class="topbar">
       <div class="brand">
-        <div class="logo"></div>
+        <div class="logo" aria-hidden="true"></div>
         <div>
           <h1>Technical SEO Quiz</h1>
           <div class="subtitle">Udemy受講生向け：30問でサクッと復習テスト</div>
         </div>
       </div>
       <div class="actions">
-        <button class="btn ghost" id="shareBtn">🔗 URLをコピー</button>
+        <button type="button" class="btn ghost" id="aboutBtn" aria-label="このアプリについて">ℹ️ About</button>
+        <button type="button" class="btn ghost" id="reportBtn" aria-label="不具合報告">🐞 不具合報告</button>
+        <button type="button" class="btn ghost" id="shareBtn" aria-label="URLをコピー">🔗 URLをコピー</button>
       </div>
     </div>
 
     <div class="grid">
+      <!-- Left: Status / Settings -->
       <div class="card">
         <div class="row space">
           <div class="row">
@@ -194,23 +255,54 @@
 
         <div class="hr"></div>
 
-        <div class="row">
-          <span class="muted tiny">制限(秒)</span>
-          <input id="limit" type="number" min="0" value="20" />
-          <button class="btn primary" id="startBtn">▶️ スタート</button>
+        <div class="row" style="align-items:flex-end">
+          <div class="row" style="gap:8px">
+            <span class="muted tiny">制限(秒)</span>
+            <input id="limit" type="number" min="0" value="20" aria-label="制限秒数(0で無制限)" />
+          </div>
+
+          <div class="row" style="gap:8px">
+            <span class="muted tiny">難易度</span>
+            <select id="levelFilter" aria-label="難易度フィルタ">
+              <option value="ALL">すべて</option>
+              <option value="Easy">Easy</option>
+              <option value="Medium">Medium</option>
+              <option value="Hard">Hard</option>
+            </select>
+          </div>
+
+          <div class="row" style="gap:8px">
+            <span class="muted tiny">タグ</span>
+            <select id="tagFilter" aria-label="タグフィルタ">
+              <option value="ALL">すべて</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:10px; justify-content:space-between">
+          <button type="button" class="btn primary" id="startBtn" aria-label="クイズを開始">▶️ スタート</button>
+          <div class="muted tiny">ベスト: <b id="bestScore">0</b> / 問題数: <b id="deckCount">30</b></div>
         </div>
 
         <div class="hr"></div>
 
         <div class="row space">
-          <div style="flex:1;min-width:220px">
+          <div style="flex:1;min-width:240px">
             <div class="muted tiny" id="progressLabel">進捗 0 / 30</div>
-            <div class="progress"><div class="bar" id="bar"></div></div>
+            <div class="progress" aria-label="進捗バー"><div class="bar" id="bar"></div></div>
           </div>
           <div class="muted tiny">毎回ランダム出題（固定30問）</div>
         </div>
+
+        <div class="hr"></div>
+
+        <div class="helpbox">
+          <div><b>使い方</b>：スタート → <span class="kbd">1-4</span>で回答 → <span class="kbd">Enter</span>で次へ</div>
+          <div class="muted">※ 制限(秒)は 0 で無制限。フィルタは出題範囲に反映されます。</div>
+        </div>
       </div>
 
+      <!-- Right: Question -->
       <div class="card" id="qCard">
         <div class="qmeta" id="qMeta"></div>
         <div class="qtitle" id="question">スタートを押してね</div>
@@ -221,8 +313,8 @@
         <div class="hr"></div>
 
         <div class="row">
-          <button class="btn" id="skipBtn">⏭️ スキップ</button>
-          <button class="btn primary" id="nextBtn">➡️ 次へ</button>
+          <button type="button" class="btn" id="skipBtn" aria-label="スキップ">⏭️ スキップ</button>
+          <button type="button" class="btn primary" id="nextBtn" aria-label="次へ">➡️ 次へ</button>
         </div>
 
         <div class="muted tiny" style="margin-top:10px">
@@ -232,934 +324,207 @@
     </div>
 
     <footer>
-      Created by <b>Takuma Oka</b> · Technical SEO Quiz
+      Created by <b>Takuma Oka</b> · Technical SEO Quiz<br/>
+      <a href="#" id="privacyLink" target="_blank" rel="noopener">Privacy Policy</a>
+      &nbsp;·&nbsp;
+      <a href="#" id="termsLink" target="_blank" rel="noopener">Terms</a>
     </footer>
+  </div>
+
+  <!-- About Modal -->
+  <div class="modalOverlay" id="aboutModal" role="dialog" aria-modal="true" aria-label="このアプリについて">
+    <div class="modal">
+      <div class="modalHeader">
+        <h2 class="modalTitle">ℹ️ このアプリについて</h2>
+        <button type="button" class="btn ghost" id="closeAboutBtn" aria-label="閉じる">✖</button>
+      </div>
+      <div class="modalBody helpbox">
+        <p>
+          <b>Technical SEO Quiz</b> は、テクニカルSEOの重要論点（Crawl / Index / CWV / Canonical / Rendering など）を
+          <b>30問</b>でサクッと復習できるブラウザゲームです。毎回ランダムに出題されます。
+        </p>
+        <p class="muted">
+          ※ 本ツールは学習目的で提供されます。検索エンジンの仕様は変化するため、最終的な判断は公式ドキュメントや実データに基づいて行ってください。
+        </p>
+        <div class="hr"></div>
+        <div class="muted tiny">
+          操作：1-4で回答 / Enterで次へ / 制限秒は0で無制限<br/>
+          保存：制限秒・フィルタ・ベストスコアはブラウザに保存されます（LocalStorage）。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tutorial Modal (first time) -->
+  <div class="modalOverlay" id="tutorialModal" role="dialog" aria-modal="true" aria-label="チュートリアル">
+    <div class="modal">
+      <div class="modalHeader">
+        <h2 class="modalTitle">👋 ようこそ！簡単チュートリアル</h2>
+        <button type="button" class="btn ghost" id="closeTutorialBtn" aria-label="閉じる">✖</button>
+      </div>
+      <div class="modalBody helpbox">
+        <p><b>3ステップでOK</b></p>
+        <ol class="muted" style="margin:0; padding-left:18px; line-height:1.7">
+          <li>左の <b>▶️ スタート</b> を押す</li>
+          <li><span class="kbd">1-4</span>（またはクリック）で回答</li>
+          <li><span class="kbd">Enter</span>（または「次へ」）で次の問題へ</li>
+        </ol>
+        <div class="hr"></div>
+        <p class="muted">不具合は「🐞 不具合報告」からフォーム送信 or テンプレコピーで連絡できます（メール設定不要）。</p>
+        <div class="row" style="justify-content:flex-end">
+          <button type="button" class="btn primary" id="tutorialOkBtn">OK!</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Report Modal -->
+  <div class="modalOverlay" id="reportModal" role="dialog" aria-modal="true" aria-label="不具合報告">
+    <div class="modal">
+      <div class="modalHeader">
+        <h2 class="modalTitle">🐞 不具合報告（メール不要）</h2>
+        <button type="button" class="btn ghost" id="closeReportBtn" aria-label="閉じる">✖</button>
+      </div>
+      <div class="modalBody helpbox">
+        <p>
+          下のどちらかで報告できます。<b>WebViewでも動きやすい</b>ように、mailto依存は避けています。
+        </p>
+
+        <div class="row" style="gap:10px; margin:10px 0 6px">
+          <a class="btn primary" id="openReportForm" href="#" target="_blank" rel="noopener">📝 報告フォームを開く</a>
+          <button type="button" class="btn" id="copyReportTemplate">📋 テンプレをコピー</button>
+        </div>
+
+        <div class="muted tiny">テンプレ（コピペしてフォームに貼れます）</div>
+        <div class="mono" id="reportTemplateBox"></div>
+
+        <div class="hr"></div>
+        <div class="muted tiny">
+          送信内容の例：発生手順 / 期待する動作 / 実際の動作 / 端末・OS / スクショ有無 など
+        </div>
+      </div>
+    </div>
   </div>
 
 <script>
 /** =========================================================
- * QUESTIONS（ここに今の100問をそのまま置けばOK）
+ * 設定（ここだけ差し替え推奨）
+ * ========================================================= */
+// TODO: あなたのフォームURLに差し替え（Google Form / Typeform / 自前フォーム等）
+const REPORT_FORM_URL = "https://example.com/your-bug-report-form";
+
+// TODO: あなたのプライバシーポリシー & 利用規約URLに差し替え
+const PRIVACY_POLICY_URL = "https://example.com/privacy";
+const TERMS_URL = "https://example.com/terms";
+
+/** =========================================================
+ * QUESTIONS（100問フル）
  * ========================================================= */
 let QUESTIONS = [
-  {
-    "id": "q001",
-    "level": "Easy",
-    "tags": ["Index"],
-    "q": "meta robots noindex の主な目的は？",
-    "choices": ["ランキングを上げる", "インデックスから除外させる意図を伝える", "クロール頻度を上げる", "必ず301を発生させる"],
-    "answer": 1,
-    "explain": "noindexは検索結果に出さない意図を伝える（命令ではなく解釈される）。"
-  },
-  {
-    "id": "q002",
-    "level": "Easy",
-    "tags": ["Crawl", "Robots"],
-    "q": "robots.txt でブロックすると起こりやすいことは？",
-    "choices": ["ページ内容を解析できる", "ページを取得できないためnoindex等を読めない", "必ずインデックスが消える", "必ず404になる"],
-    "answer": 1,
-    "explain": "robotsブロックは取得自体を止めるため、メタ情報を読めないことがある。"
-  },
-  {
-    "id": "q003",
-    "level": "Easy",
-    "tags": ["Index", "Canonical"],
-    "q": "rel=canonical の位置づけとして最も正しいのは？",
-    "choices": ["強制命令", "正規URLのシグナル（ヒント）", "必ずnoindexにする", "必ず301する"],
-    "answer": 1,
-    "explain": "canonicalはヒント。内部リンク/サイトマップ/リダイレクト等との整合が重要。"
-  },
-  {
-    "id": "q004",
-    "level": "Easy",
-    "tags": ["Crawl", "Sitemap"],
-    "q": "XMLサイトマップの役割として正しいのは？",
-    "choices": ["掲載URLは必ずインデックス", "発見とクロールの手がかり", "ランキング要因そのもの", "重複URLを自動削除"],
-    "answer": 1,
-    "explain": "サイトマップは発見/優先度のヒント。インデックス保証ではない。"
-  },
-  {
-    "id": "q005",
-    "level": "Easy",
-    "tags": ["Crawl", "Index"],
-    "q": "HTTPステータス 404 が示すのは？",
-    "choices": ["恒久移転", "一時移転", "見つからない", "サーバーエラー"],
-    "answer": 2,
-    "explain": "404はNot Found。削除/存在しないURLに返す。"
-  },
-  {
-    "id": "q006",
-    "level": "Easy",
-    "tags": ["Index", "Redirect"],
-    "q": "301 リダイレクトの意味は？",
-    "choices": ["一時的な転送", "恒久的な転送", "クロール停止", "noindex命令"],
-    "answer": 1,
-    "explain": "301は恒久転送。正規化や移転時に使う。"
-  },
-  {
-    "id": "q007",
-    "level": "Easy",
-    "tags": ["Index", "Redirect"],
-    "q": "302 リダイレクトの意味は？",
-    "choices": ["恒久転送", "一時転送", "404", "サーバーダウン"],
-    "answer": 1,
-    "explain": "302は基本的に一時転送。用途に応じて使い分ける。"
-  },
-  {
-    "id": "q008",
-    "level": "Easy",
-    "tags": ["Index"],
-    "q": "重複ページが大量にあると起きやすい問題は？",
-    "choices": ["クロール効率低下や評価分散", "必ず順位が上がる", "必ずCWVが改善", "必ずサイトリンクが出る"],
-    "answer": 0,
-    "explain": "重複はクロール/評価の分散やインデックス品質低下につながる。"
-  },
-  {
-    "id": "q009",
-    "level": "Easy",
-    "tags": ["Crawl"],
-    "q": "内部リンクの主な価値は？",
-    "choices": ["外部リンクを自動生成", "発見性と重要度シグナル", "広告収益を増やす", "画像を圧縮する"],
-    "answer": 1,
-    "explain": "内部リンクは発見性・巡回・重要度伝達に効く。"
-  },
-  {
-    "id": "q010",
-    "level": "Easy",
-    "tags": ["Index"],
-    "q": "URL正規化（canonical/redirect等）の目的は？",
-    "choices": ["URLを増やす", "重複を統合し評価分散を防ぐ", "クローラをブロックする", "JSを減らす"],
-    "answer": 1,
-    "explain": "同一/類似コンテンツの評価分散を抑え、正規URLへ寄せる。"
-  },
-
-  {
-    "id": "q011",
-    "level": "Medium",
-    "tags": ["Crawl"],
-    "q": "クロールバジェットに影響しやすいのは？",
-    "choices": ["サイトの色", "大量の重複URLや無駄URL", "h1の数", "OGPタグ"],
-    "answer": 1,
-    "explain": "無駄URL増加はクロールの浪費に直結する。"
-  },
-  {
-    "id": "q012",
-    "level": "Medium",
-    "tags": ["Crawl", "Logs"],
-    "q": "ログ分析で最も見たい指標の一つは？",
-    "choices": ["フォントサイズ", "GooglebotのヒットURL/頻度/ステータス", "SNSいいね数", "画像の彩度"],
-    "answer": 1,
-    "explain": "どのURLにどれだけ来て何を返したかが分かる。"
-  },
-  {
-    "id": "q013",
-    "level": "Medium",
-    "tags": ["Index"],
-    "q": "Search Consoleの「クロール済み - インデックス未登録」で疑うべきは？",
-    "choices": ["コンテンツ品質/重複/薄さ", "ドメイン期限切れ", "必ずrobotsブロック", "必ず手動ペナルティ"],
-    "answer": 0,
-    "explain": "品質や重複、価値不足でインデックスされないケースが多い。"
-  },
-  {
-    "id": "q014",
-    "level": "Medium",
-    "tags": ["Index", "Robots"],
-    "q": "X-Robots-Tag が使えるのは？",
-    "choices": ["HTTPヘッダで制御できる", "HTML内だけ", "画像の色だけ", "CSSのみ"],
-    "answer": 0,
-    "explain": "HTTPヘッダでnoindex等を指定でき、PDFなどにも適用可能。"
-  },
-  {
-    "id": "q015",
-    "level": "Medium",
-    "tags": ["Index", "Hreflang"],
-    "q": "hreflangの目的は？",
-    "choices": ["ページ速度改善", "言語/地域の適切なURLを提示", "必ず順位上昇", "クロール停止"],
-    "answer": 1,
-    "explain": "言語/地域ごとに適切なURLを検索エンジンに伝える。"
-  },
-  {
-    "id": "q016",
-    "level": "Medium",
-    "tags": ["Index", "Hreflang"],
-    "q": "hreflangで重要な実装要件は？",
-    "choices": ["片方向でもOK", "相互参照（return tag）", "必ずJSで挿入", "必ず画像に埋め込む"],
-    "answer": 1,
-    "explain": "多くの場合、相互参照がないと不整合になりやすい。"
-  },
-  {
-    "id": "q017",
-    "level": "Medium",
-    "tags": ["Index"],
-    "q": "パラメータ付きURLが大量発生する典型例は？",
-    "choices": ["ファセットナビ/並び替え/フィルタ", "OGP", "SVG", "favicon"],
-    "answer": 0,
-    "explain": "ECの絞り込み・並び替えは無限URLを生みやすい。"
-  },
-  {
-    "id": "q018",
-    "level": "Medium",
-    "tags": ["Index", "Canonical"],
-    "q": "canonical先が404のとき起きやすいのは？",
-    "choices": ["必ず統合される", "シグナル無効化/無視されやすい", "必ず順位上がる", "必ずクロール停止"],
-    "answer": 1,
-    "explain": "正規先がエラーだと採用されにくい。ステータス整合が重要。"
-  },
-  {
-    "id": "q019",
-    "level": "Medium",
-    "tags": ["Index", "Redirect"],
-    "q": "リダイレクトチェーンが長いと何が起きやすい？",
-    "choices": ["遅延・クロール効率悪化", "CLS改善", "画像最適化", "構造化データ増加"],
-    "answer": 0,
-    "explain": "チェーンは遅延とクロール浪費を招くので短縮が基本。"
-  },
-  {
-    "id": "q020",
-    "level": "Medium",
-    "tags": ["Index"],
-    "q": "HTTP→HTTPS移行で重要な対応は？",
-    "choices": ["robotsを全部Disallow", "301/内部リンク/サイトマップ/正規化の統一", "タイトルを全部同じにする", "画像を全部PNG"],
-    "answer": 1,
-    "explain": "シグナルをHTTPSへ統一するのが基本。"
-  },
-
-  {
-    "id": "q021",
-    "level": "Medium",
-    "tags": ["Rendering"],
-    "q": "CSR（クライアントサイドレンダリング）だけに依存すると起きやすい課題は？",
-    "choices": ["HTML初期表示が薄く発見/評価が遅れる", "必ず順位が上がる", "必ずLCP改善", "必ずクロール停止"],
-    "answer": 0,
-    "explain": "初期HTMLが薄いとレンダリング待ちで評価が遅れやすい。"
-  },
-  {
-    "id": "q022",
-    "level": "Medium",
-    "tags": ["Rendering"],
-    "q": "SSRの主なメリットは？",
-    "choices": ["JSをゼロにできる", "初期HTMLに主要コンテンツを載せやすい", "必ず広告収益が上がる", "robotsが不要になる"],
-    "answer": 1,
-    "explain": "初期HTMLが充実し、発見/表示が安定しやすい。"
-  },
-  {
-    "id": "q023",
-    "level": "Medium",
-    "tags": ["Rendering"],
-    "q": "レンダリングブロックになりやすいのは？",
-    "choices": ["同期読み込みのCSS/JS", "alt属性", "titleタグ", "canonicalタグ"],
-    "answer": 0,
-    "explain": "Critical CSSやdefer/asyncなどで影響を減らす。"
-  },
-  {
-    "id": "q024",
-    "level": "Medium",
-    "tags": ["CWV"],
-    "q": "LCPは何を測る？",
-    "choices": ["入力応答の速さ", "最大要素が表示されるまで", "レイアウトのズレ", "サーバーの稼働率"],
-    "answer": 1,
-    "explain": "Largest Contentful Paint＝主要（最大）要素の表示完了まで。"
-  },
-  {
-    "id": "q025",
-    "level": "Medium",
-    "tags": ["CWV"],
-    "q": "CLSは何を測る？",
-    "choices": ["ページの色", "レイアウトの視覚的なズレ", "JSの行数", "クロール頻度"],
-    "answer": 1,
-    "explain": "Cumulative Layout Shift＝視覚的なガタつき。"
-  },
-  {
-    "id": "q026",
-    "level": "Medium",
-    "tags": ["CWV"],
-    "q": "INP（旧FIDより重視される指標）は何を測る？",
-    "choices": ["画像サイズ", "操作に対する応答性", "robots設定", "サイトマップ数"],
-    "answer": 1,
-    "explain": "Interaction to Next Paint＝操作してから次の描画までの応答性。"
-  },
-  {
-    "id": "q027",
-    "level": "Medium",
-    "tags": ["CWV"],
-    "q": "CLSを悪化させやすい要因は？",
-    "choices": ["画像/広告枠のサイズ未指定", "gzip圧縮", "キャッシュ", "preconnect"],
-    "answer": 0,
-    "explain": "幅/高さ未指定で後から要素が押し下げるとズレが出る。"
-  },
-  {
-    "id": "q028",
-    "level": "Medium",
-    "tags": ["CWV"],
-    "q": "LCP改善で効きやすいのは？",
-    "choices": ["ヒーロー画像の最適化と優先読み込み", "h1を増やす", "OGタグ追加", "robotsをDisallow"],
-    "answer": 0,
-    "explain": "LCP要素（ヒーロー画像/大見出し）の最適化が効く。"
-  },
-  {
-    "id": "q029",
-    "level": "Medium",
-    "tags": ["CWV"],
-    "q": "不要なJSが多いと悪化しやすい指標は？",
-    "choices": ["INP/LCP", "hreflang", "canonical", "sitemap"],
-    "answer": 0,
-    "explain": "JS実行が重いと応答性や描画が遅れる。"
-  },
-  {
-    "id": "q030",
-    "level": "Medium",
-    "tags": ["CWV"],
-    "q": "画像最適化で一般的に推奨されやすい形式は？",
-    "choices": ["BMP", "WebP/AVIFなど", "TIFF", "PSD"],
-    "answer": 1,
-    "explain": "圧縮効率の高い次世代フォーマットが有利なことが多い。"
-  },
-
-  {
-    "id": "q031",
-    "level": "Medium",
-    "tags": ["CWV", "Rendering"],
-    "q": "フォント読み込みで表示遅延を減らす施策は？",
-    "choices": ["font-display: swap", "h1を削除", "robotsブロック", "canonical削除"],
-    "answer": 0,
-    "explain": "swapでフォント待ちによる表示停止を減らす。"
-  },
-  {
-    "id": "q032",
-    "level": "Medium",
-    "tags": ["CWV"],
-    "q": "CDNの主なメリットは？",
-    "choices": ["データベースを消せる", "配信をユーザー近くにして遅延を減らす", "canonical不要", "必ず順位が上がる"],
-    "answer": 1,
-    "explain": "地理的に近いエッジから配信しTTFB等を改善しやすい。"
-  },
-  {
-    "id": "q033",
-    "level": "Medium",
-    "tags": ["CWV"],
-    "q": "TTFBを改善しやすい要因は？",
-    "choices": ["サーバー処理/キャッシュ/CDN", "alt属性", "h2の数", "OG画像"],
-    "answer": 0,
-    "explain": "初期応答はサーバー性能やキャッシュ戦略に依存しやすい。"
-  },
-  {
-    "id": "q034",
-    "level": "Medium",
-    "tags": ["Schema"],
-    "q": "構造化データ（Schema）の主目的は？",
-    "choices": ["検索エンジンへ意味を伝える", "必ず順位を上げる", "必ずクロール停止", "画像を圧縮する"],
-    "answer": 0,
-    "explain": "内容の意味付けを明確化し、リッチ結果等の理解を助ける。"
-  },
-  {
-    "id": "q035",
-    "level": "Medium",
-    "tags": ["Schema"],
-    "q": "JSON-LDの特徴は？",
-    "choices": ["HTMLと混ぜずに書けない", "scriptタグ内に書く形式", "robots.txtに書く", "CSSに書く"],
-    "answer": 1,
-    "explain": "JSON-LDはscript type=application/ld+json に記述する。"
-  },
-  {
-    "id": "q036",
-    "level": "Medium",
-    "tags": ["Schema"],
-    "q": "構造化データのバリデーションに使う代表的なものは？",
-    "choices": ["Rich Results Test", "PageSpeed Insights", "Ahrefs", "Photoshop"],
-    "answer": 0,
-    "explain": "Rich Results Test等でエラー/警告を確認できる。"
-  },
-  {
-    "id": "q037",
-    "level": "Medium",
-    "tags": ["Logs"],
-    "q": "5xxが多発していると起きやすいのは？",
-    "choices": ["クロール低下/再試行増", "必ず順位上昇", "CLS改善", "構造化データ増"],
-    "answer": 0,
-    "explain": "サーバーエラーはクロール効率と評価に悪影響。"
-  },
-  {
-    "id": "q038",
-    "level": "Medium",
-    "tags": ["Index"],
-    "q": "soft 404（ソフト404）とは？",
-    "choices": ["実際は200だが中身が無い/エラーに見える", "必ず301", "画像が無い", "JSが無い"],
-    "answer": 0,
-    "explain": "200返しても内容が無いとGoogleがsoft 404扱いすることがある。"
-  },
-  {
-    "id": "q039",
-    "level": "Medium",
-    "tags": ["Index"],
-    "q": "ページネーションでよくある課題は？",
-    "choices": ["深いページが発見されにくい", "必ず順位上がる", "必ずnoindexになる", "必ずCLSが悪化"],
-    "answer": 0,
-    "explain": "深いページの発見性と内部リンク設計が重要。"
-  },
-  {
-    "id": "q040",
-    "level": "Medium",
-    "tags": ["Index"],
-    "q": "パラメータの正規化で一般的に使うのは？",
-    "choices": ["canonical/内部リンク統一", "OGP", "favicon", "AMPだけ"],
-    "answer": 0,
-    "explain": "正規URLに寄せるシグナルを揃えるのが基本。"
-  },
-
-  {
-    "id": "q041",
-    "level": "Hard",
-    "tags": ["Crawl", "Logs"],
-    "q": "ログでGooglebotが特定ディレクトリばかりクロールする時に疑うべきは？",
-    "choices": ["内部リンク偏り/無限URL/リダイレクト", "画像形式", "OGP設定", "タイトルの長さ"],
-    "answer": 0,
-    "explain": "巡回が偏る原因（無限URL/内部リンク/正規化）を疑う。"
-  },
-  {
-    "id": "q042",
-    "level": "Hard",
-    "tags": ["Index", "Canonical"],
-    "q": "canonicalが無視されやすいケースは？",
-    "choices": ["正規先が別内容/エラー/シグナル不整合", "h1が1つ", "画像がWebP", "CSSが少ない"],
-    "answer": 0,
-    "explain": "内容一致とシグナル整合がないと採用されにくい。"
-  },
-  {
-    "id": "q043",
-    "level": "Hard",
-    "tags": ["Index"],
-    "q": "同一ページで canonical と noindex を同時に入れると？",
-    "choices": ["意図が矛盾し評価が不安定になりうる", "必ず順位上昇", "必ずクロール停止", "必ず301になる"],
-    "answer": 0,
-    "explain": "canonicalは統合ヒント、noindexは除外意図で矛盾しやすい。"
-  },
-  {
-    "id": "q044",
-    "level": "Hard",
-    "tags": ["Index", "Hreflang"],
-    "q": "hreflang x-default の用途は？",
-    "choices": ["デフォルトの言語/地域を示す", "速度改善", "クロール停止", "構造化データ"],
-    "answer": 0,
-    "explain": "どの言語にも合わない場合の既定URLを示す。"
-  },
-  {
-    "id": "q045",
-    "level": "Hard",
-    "tags": ["Crawl"],
-    "q": "巨大サイトでXMLサイトマップを分割する主な理由は？",
-    "choices": ["管理・上限・更新単位を分けるため", "順位を上げるため", "robots不要になるため", "JSが減るため"],
-    "answer": 0,
-    "explain": "上限や運用面で分割し、更新管理をしやすくする。"
-  },
-
-  {
-    "id": "q046",
-    "level": "Medium",
-    "tags": ["CWV"],
-    "q": "画像の遅延読み込み（lazy-load）で注意すべきは？",
-    "choices": ["LCP要素を遅延させない", "必ずCLSが0になる", "robotsが不要", "canonicalが不要"],
-    "answer": 0,
-    "explain": "ヒーロー画像をlazyにするとLCPが悪化しやすい。"
-  },
-  {
-    "id": "q047",
-    "level": "Medium",
-    "tags": ["CWV"],
-    "q": "preconnect の効果は？",
-    "choices": ["外部接続の初期コストを先に払う", "画像を圧縮", "noindexを付与", "301を作る"],
-    "answer": 0,
-    "explain": "DNS/TLSなどの接続準備を前倒しできる。"
-  },
-  {
-    "id": "q048",
-    "level": "Medium",
-    "tags": ["CWV"],
-    "q": "HTTPキャッシュが効くと改善しやすいのは？",
-    "choices": ["再訪時の読み込み", "hreflang", "canonical採用", "robots解釈"],
-    "answer": 0,
-    "explain": "静的リソースの再取得を減らし表示が速くなる。"
-  },
-  {
-    "id": "q049",
-    "level": "Medium",
-    "tags": ["Schema"],
-    "q": "FAQ構造化データで重要なのは？",
-    "choices": ["ページ内に実際のQ&Aが存在する", "必ず順位が上がる", "JSだけで生成する", "robotsをDisallowする"],
-    "answer": 0,
-    "explain": "見えない/存在しない内容をマークアップするのはNG。"
-  },
-  {
-    "id": "q050",
-    "level": "Medium",
-    "tags": ["Index"],
-    "q": "rel='nofollow' の基本的な意味は？",
-    "choices": ["リンクシグナルを渡さない意図", "必ずクロール停止", "必ずnoindex", "必ず順位上がる"],
-    "answer": 0,
-    "explain": "リンクの評価伝達を抑えるヒントとして扱われる。"
-  },
-
-  {
-    "id": "q051",
-    "level": "Medium",
-    "tags": ["Index"],
-    "q": "重複コンテンツ対策で最優先になりやすいのは？",
-    "choices": ["正規URLへの統合（redirect/canonical）", "色を変える", "画像を増やす", "フォントを変える"],
-    "answer": 0,
-    "explain": "まず正規化の方針を決めてシグナルを統一する。"
-  },
-  {
-    "id": "q052",
-    "level": "Medium",
-    "tags": ["Crawl"],
-    "q": "サイト内検索結果ページを無制限にインデックスさせると？",
-    "choices": ["薄いページが増えやすい", "必ず順位上昇", "必ずCWV改善", "必ず404になる"],
-    "answer": 0,
-    "explain": "内部検索は無限に近い薄いURLを生みやすい。"
-  },
-  {
-    "id": "q053",
-    "level": "Hard",
-    "tags": ["Crawl", "Index"],
-    "q": "URLパラメータで無限クロールが起きている時の優先対応は？",
-    "choices": ["内部リンク/正規化/不要URLの生成抑制", "h1を増やす", "OGP追加", "画像形式変更のみ"],
-    "answer": 0,
-    "explain": "発生源を止め、正規化と内部リンクを整える。"
-  },
-  {
-    "id": "q054",
-    "level": "Medium",
-    "tags": ["Index"],
-    "q": "同一内容で / と /index.html が併存する時の基本は？",
-    "choices": ["正規化（301/canonical/内部リンク統一）", "両方noindex", "robotsで両方ブロック", "何もしない"],
-    "answer": 0,
-    "explain": "正規URLを決めてシグナル統一が基本。"
-  },
-  {
-    "id": "q055",
-    "level": "Medium",
-    "tags": ["Index"],
-    "q": "wwwあり/なし、http/https が混在していると？",
-    "choices": ["重複・評価分散・計測分断が起きやすい", "必ず順位上がる", "必ずCLS改善", "必ずnoindexになる"],
-    "answer": 0,
-    "explain": "1つに統一（リダイレクト＋内部リンク＋サイトマップ）。"
-  },
-
-  {
-    "id": "q056",
-    "level": "Medium",
-    "tags": ["CWV"],
-    "q": "画像のサイズ指定（width/height）を入れる主な目的は？",
-    "choices": ["CLSを抑える", "LCPを悪化させる", "robotsを簡略化", "canonicalを付与"],
-    "answer": 0,
-    "explain": "表示枠を確保してレイアウトズレを防ぐ。"
-  },
-  {
-    "id": "q057",
-    "level": "Medium",
-    "tags": ["CWV"],
-    "q": "巨大なCSSが多いと起きやすいのは？",
-    "choices": ["レンダリング遅延", "hreflang欠落", "サイトマップ消失", "404増加"],
-    "answer": 0,
-    "explain": "Critical CSSや分割で初期描画を速くする。"
-  },
-  {
-    "id": "q058",
-    "level": "Medium",
-    "tags": ["Rendering"],
-    "q": "defer 属性の効果は？",
-    "choices": ["HTML解析をブロックしにくい順でJSを実行", "画像を圧縮", "noindex付与", "301作成"],
-    "answer": 0,
-    "explain": "パースを阻害しにくく、DOM構築後に実行される。"
-  },
-  {
-    "id": "q059",
-    "level": "Medium",
-    "tags": ["Rendering"],
-    "q": "async 属性の特徴は？",
-    "choices": ["読み込み完了次第すぐ実行され順序は保証されない", "必ず順番通り実行", "CSS専用", "robots専用"],
-    "answer": 0,
-    "explain": "依存関係があるスクリプトには注意。"
-  },
-  {
-    "id": "q060",
-    "level": "Medium",
-    "tags": ["Schema"],
-    "q": "Organization構造化データでよく使うのは？",
-    "choices": ["name/logo/sameAs など", "LCP/CLS", "canonicalのみ", "robotsのみ"],
-    "answer": 0,
-    "explain": "ブランドの同一性（ロゴ・公式SNS等）を補助できる。"
-  },
-
-  {
-    "id": "q061",
-    "level": "Medium",
-    "tags": ["Index"],
-    "q": "rel='prev/next' は現在どう扱われることが多い？",
-    "choices": ["Googleではランキング/統合の強いシグナルではない", "必ず統合される", "必ずnoindex", "必ず301"],
-    "answer": 0,
-    "explain": "現在は強いインデックス統合の仕組みとしては期待しすぎない。"
-  },
-  {
-    "id": "q062",
-    "level": "Medium",
-    "tags": ["Index"],
-    "q": "パンくずリストがSEOに役立つ理由は？",
-    "choices": ["階層構造を明確にし内部リンクを補強", "画像圧縮になる", "robots不要になる", "必ず順位上がる"],
-    "answer": 0,
-    "explain": "情報設計と内部リンクの強化につながる。"
-  },
-  {
-    "id": "q063",
-    "level": "Medium",
-    "tags": ["Schema"],
-    "q": "BreadcrumbList構造化データの効果として適切なのは？",
-    "choices": ["検索結果でパンくず表示の理解を助ける", "必ず順位上昇", "必ずインデックス削除", "CLS改善"],
-    "answer": 0,
-    "explain": "パンくずの意味付けを検索エンジンに伝える。"
-  },
-  {
-    "id": "q064",
-    "level": "Medium",
-    "tags": ["Logs"],
-    "q": "「クロールは来ているが重要ページに少ない」時の打ち手は？",
-    "choices": ["内部リンク強化/サイトマップ整備/無駄URL削減", "色変更", "OGP", "画像をBMP化"],
-    "answer": 0,
-    "explain": "重要ページに巡回を寄せる設計が必要。"
-  },
-  {
-    "id": "q065",
-    "level": "Medium",
-    "tags": ["Crawl"],
-    "q": "HTTP 429 が増えている時に疑うのは？",
-    "choices": ["レート制限/ボット制御/サーバー設定", "canonical", "hreflang", "タイトル"],
-    "answer": 0,
-    "explain": "Too Many Requests。アクセス制限の調整が必要な場合がある。"
-  },
-
-  {
-    "id": "q066",
-    "level": "Medium",
-    "tags": ["Index"],
-    "q": "PDFを検索結果に出したくない時に使えるのは？",
-    "choices": ["X-Robots-Tag: noindex", "titleタグ短縮", "h1を増やす", "OGP追加"],
-    "answer": 0,
-    "explain": "HTML以外はHTTPヘッダnoindexが便利。"
-  },
-  {
-    "id": "q067",
-    "level": "Hard",
-    "tags": ["Index"],
-    "q": "「インデックス登録をリクエスト」しても反映されない典型理由は？",
-    "choices": ["品質/重複/価値不足", "favicon未設定", "OGP未設定", "色が暗い"],
-    "answer": 0,
-    "explain": "リクエストは優先度を上げるだけで、品質問題は解決しない。"
-  },
-  {
-    "id": "q068",
-    "level": "Hard",
-    "tags": ["Index"],
-    "q": "パラメータURLを大量にnoindexする時の注意点は？",
-    "choices": ["クロール負荷は残りうる（発生源対策も必要）", "必ずクロールが止まる", "必ず順位が上がる", "必ずJSが減る"],
-    "answer": 0,
-    "explain": "noindexはインデックス除外意図。発生抑制・正規化も重要。"
-  },
-  {
-    "id": "q069",
-    "level": "Hard",
-    "tags": ["Crawl"],
-    "q": "クロールを“止めたい”のか“インデックスさせたくない”のかで最も違うのは？",
-    "choices": ["robotsとnoindexの使い分け", "画像形式", "タイトル長", "OGP"],
-    "answer": 0,
-    "explain": "noindexはクロール必要な場合が多い。目的を分ける。"
-  },
-  {
-    "id": "q070",
-    "level": "Medium",
-    "tags": ["Crawl"],
-    "q": "サイトマップに載せるべきURLは基本的に？",
-    "choices": ["インデックスさせたい正規URL", "全URL（パラメータ含む）", "404 URL", "robotsブロックURLだけ"],
-    "answer": 0,
-    "explain": "正規URLを載せ、余計なURLは入れないのが基本。"
-  },
-
-  {
-    "id": "q071",
-    "level": "Medium",
-    "tags": ["Index"],
-    "q": "同一内容で言語だけ違うページを統合（canonical）してよい？",
-    "choices": ["基本は統合しない（hreflang等で出し分け）", "常に統合すべき", "常にnoindex", "常にrobotsブロック"],
-    "answer": 0,
-    "explain": "言語別は統合より出し分けが一般的。"
-  },
-  {
-    "id": "q072",
-    "level": "Medium",
-    "tags": ["Schema"],
-    "q": "Article構造化データで重要なプロパティ例は？",
-    "choices": ["headline/datePublished/author", "LCP/CLS", "canonicalのみ", "robotsのみ"],
-    "answer": 0,
-    "explain": "記事の属性（見出し/著者/公開日）を明確にする。"
-  },
-  {
-    "id": "q073",
-    "level": "Medium",
-    "tags": ["Schema"],
-    "q": "Product構造化データでよく使うのは？",
-    "choices": ["name/offers/price/availability", "h1/h2", "robots", "HTTP 500"],
-    "answer": 0,
-    "explain": "価格/在庫/商品属性が中心。"
-  },
-  {
-    "id": "q074",
-    "level": "Hard",
-    "tags": ["Schema"],
-    "q": "構造化データでやってはいけないのは？",
-    "choices": ["ページに存在しない内容をマークアップ", "実データをマークアップ", "テストで検証", "エラーを修正"],
-    "answer": 0,
-    "explain": "ユーザーに見えない虚偽情報のマークアップはNG。"
-  },
-  {
-    "id": "q075",
-    "level": "Medium",
-    "tags": ["CWV"],
-    "q": "画像をレスポンシブで出し分ける代表的手法は？",
-    "choices": ["srcset/sizes", "noindex", "robots", "hreflang"],
-    "answer": 0,
-    "explain": "端末に応じた画像を配信しやすい。"
-  },
-
-  {
-    "id": "q076",
-    "level": "Medium",
-    "tags": ["CWV"],
-    "q": "圧縮（gzip/br）で主に軽くなるのは？",
-    "choices": ["HTML/CSS/JSなどのテキスト資産", "PNGだけ", "動画だけ", "PDFだけ"],
-    "answer": 0,
-    "explain": "テキスト系リソースに効きやすい。"
-  },
-  {
-    "id": "q077",
-    "level": "Medium",
-    "tags": ["CWV"],
-    "q": "HTTP/2 のメリットとして適切なのは？",
-    "choices": ["多重化などで効率的に転送できる", "必ず画像がWebPになる", "robotsが不要", "必ず順位上がる"],
-    "answer": 0,
-    "explain": "多重化により並列転送が効率化されやすい。"
-  },
-  {
-    "id": "q078",
-    "level": "Hard",
-    "tags": ["CWV"],
-    "q": "サードパーティタグが多いと悪化しやすいのは？",
-    "choices": ["INP/LCP/総合パフォーマンス", "hreflang精度", "canonical採用", "robots解釈"],
-    "answer": 0,
-    "explain": "外部JSが増えると描画と応答性が落ちやすい。"
-  },
-  {
-    "id": "q079",
-    "level": "Hard",
-    "tags": ["Logs"],
-    "q": "ログで 301→200 の成功でも課題になりうるのは？",
-    "choices": ["チェーンが長い/大量に発生している", "必ず順位上昇", "CLSが0になる", "構造化データ増"],
-    "answer": 0,
-    "explain": "大量チェーンはクロール浪費。直接200へ寄せる。"
-  },
-  {
-    "id": "q080",
-    "level": "Hard",
-    "tags": ["Crawl"],
-    "q": "カテゴリページが薄い場合の典型改善は？",
-    "choices": ["意図に合う説明/内部リンク/ファセット整理", "robotsでブロック", "全てnoindex", "画像をBMPに"],
-    "answer": 0,
-    "explain": "薄い一覧は補足情報と設計で価値を上げる。"
-  },
-
-  {
-    "id": "q081",
-    "level": "Medium",
-    "tags": ["Index"],
-    "q": "同じコンテンツが複数URLで出る原因になりやすいのは？",
-    "choices": ["末尾スラッシュ/大文字小文字/UTM/パラメータ", "CSS", "OGP", "favicon"],
-    "answer": 0,
-    "explain": "URL揺れの統一が重要。"
-  },
-  {
-    "id": "q082",
-    "level": "Medium",
-    "tags": ["Index"],
-    "q": "大文字URLと小文字URLが別扱いになる可能性があるのは？",
-    "choices": ["サーバー設定次第で区別される", "必ず同一扱い", "必ず404", "必ず301"],
-    "answer": 0,
-    "explain": "ケースにより別URL。統一方針が必要。"
-  },
-  {
-    "id": "q083",
-    "level": "Medium",
-    "tags": ["Index"],
-    "q": "正規URLを内部リンクで一貫させることの目的は？",
-    "choices": ["canonical採用を助ける", "CLS改善", "画像圧縮", "robots簡略化"],
-    "answer": 0,
-    "explain": "シグナル一貫性を高めて正規化の精度を上げる。"
-  },
-  {
-    "id": "q084",
-    "level": "Hard",
-    "tags": ["Index"],
-    "q": "「重複、Googleにより正規URLが選択されました」で重要なのは？",
-    "choices": ["Googleの選択理由（内部リンク/サイトマップ/内容一致）を改善", "色を変える", "OGP", "画像形式だけ変更"],
-    "answer": 0,
-    "explain": "Googleの正規選択を理解し、シグナルを揃える。"
-  },
-  {
-    "id": "q085",
-    "level": "Medium",
-    "tags": ["Index"],
-    "q": "URL検査で「検出 - インデックス未登録」が多い時は？",
-    "choices": ["内部リンク/サイトマップ/発見経路を改善", "h1を増やす", "OGP追加", "画像をBMP"],
-    "answer": 0,
-    "explain": "発見経路（内部リンク/サイトマップ）を強くする。"
-  },
-
-  {
-    "id": "q086",
-    "level": "Medium",
-    "tags": ["Crawl"],
-    "q": "孤立ページ（Orphan page）の課題は？",
-    "choices": ["発見されにくい", "必ず順位上がる", "必ずCWV改善", "必ずnoindex"],
-    "answer": 0,
-    "explain": "内部リンクがないと発見性が低い。"
-  },
-  {
-    "id": "q087",
-    "level": "Hard",
-    "tags": ["Crawl"],
-    "q": "孤立ページを減らす最も直接的な施策は？",
-    "choices": ["内部リンクを張る/サイト構造を見直す", "OGP", "画像圧縮だけ", "robotsブロック"],
-    "answer": 0,
-    "explain": "発見性の設計問題なので内部リンクが本筋。"
-  },
-  {
-    "id": "q088",
-    "level": "Medium",
-    "tags": ["Index"],
-    "q": "カテゴリ一覧に同一商品が大量に重複表示されると？",
-    "choices": ["薄い重複ページが増えやすい", "必ず順位上がる", "必ずLCP改善", "必ずnoindex"],
-    "answer": 0,
-    "explain": "重複や薄さが増えると評価が落ちやすい。"
-  },
-  {
-    "id": "q089",
-    "level": "Hard",
-    "tags": ["CWV"],
-    "q": "動画・巨大画像がファーストビューにあると最優先で見る指標は？",
-    "choices": ["LCP", "hreflang", "canonical", "robots"],
-    "answer": 0,
-    "explain": "ファーストビューの最大要素がLCPになりやすい。"
-  },
-  {
-    "id": "q090",
-    "level": "Hard",
-    "tags": ["CWV"],
-    "q": "モバイルでタップ遅延が体感される時に疑うのは？",
-    "choices": ["メインスレッド占有（JS重い）→INP悪化", "robots", "hreflang", "サイトマップ"],
-    "answer": 0,
-    "explain": "応答性はINP。JSの削減や分割が効く。"
-  },
-
-  {
-    "id": "q091",
-    "level": "Medium",
-    "tags": ["Schema"],
-    "q": "レビューの構造化データで注意すべきは？",
-    "choices": ["自己サイトの実体験に基づく/ガイドライン遵守", "適当に星5を書く", "ページに表示しない", "robotsで隠す"],
-    "answer": 0,
-    "explain": "ガイドライン違反や虚偽レビューはリスク。"
-  },
-  {
-    "id": "q092",
-    "level": "Hard",
-    "tags": ["Schema"],
-    "q": "構造化データのエラーと警告の違いは？",
-    "choices": ["エラーは機能しない可能性が高い／警告は一部不足", "両方同じ", "警告の方が致命的", "エラーは無視でOK"],
-    "answer": 0,
-    "explain": "エラーは必ず修正優先。警告は影響範囲を見て対応。"
-  },
-  {
-    "id": "q093",
-    "level": "Hard",
-    "tags": ["Logs"],
-    "q": "Googlebotが大量に 404 を踏んでいる時の基本対応は？",
-    "choices": ["内部リンク/サイトマップ/リダイレクトの整理", "OGP追加", "画像をWebP", "色を変える"],
-    "answer": 0,
-    "explain": "発生源（リンク/旧URL）を潰す。必要なら適切に301。"
-  },
-  {
-    "id": "q094",
-    "level": "Hard",
-    "tags": ["Logs"],
-    "q": "Googlebotが特定パラメータを延々クロールする時の本質対策は？",
-    "choices": ["URL生成ロジック/内部リンク/正規化で止血", "OGP", "画像圧縮だけ", "タイトル変更"],
-    "answer": 0,
-    "explain": "無限URLの発生源を止めるのが最優先。"
-  },
-  {
-    "id": "q095",
-    "level": "Hard",
-    "tags": ["Index"],
-    "q": "一括でURLを“消したい”時、noindexだけで十分？",
-    "choices": ["用途次第。削除/410/404や内部リンク整理も必要", "常に十分", "常に無意味", "常に301だけでOK"],
-    "answer": 0,
-    "explain": "目的（削除/統合/非表示）により最適手段が変わる。"
-  },
-
-  {
-    "id": "q096",
-    "level": "Medium",
-    "tags": ["Index"],
-    "q": "410 Gone の意味は？",
-    "choices": ["恒久的に削除された", "一時的に移転", "サーバーエラー", "アクセス制限"],
-    "answer": 0,
-    "explain": "410は削除を明確に伝えるステータス。"
-  },
-  {
-    "id": "q097",
-    "level": "Hard",
-    "tags": ["Index", "Redirect"],
-    "q": "移転後、旧URLが検索結果に残り続ける時に見直すのは？",
-    "choices": ["301の有無/内部リンク/サイトマップ/キャッシュ/正規化", "OGP", "色", "画像形式のみ"],
-    "answer": 0,
-    "explain": "シグナル統一とリダイレクトの整合が基本。"
-  },
-  {
-    "id": "q098",
-    "level": "Hard",
-    "tags": ["Crawl", "Index"],
-    "q": "クロールは増えたのにインデックスが増えない時の典型原因は？",
-    "choices": ["品質・重複・価値不足", "フォント変更", "OGP", "favicon"],
-    "answer": 0,
-    "explain": "クロール＝インデックスではない。品質と重複が重要。"
-  },
-  {
-    "id": "q099",
-    "level": "Hard",
-    "tags": ["CWV"],
-    "q": "PageSpeedの“ラボデータ”と“フィールドデータ”の違いは？",
-    "choices": ["ラボは環境固定/推定、フィールドは実ユーザー計測", "両方同じ", "フィールドは推定", "ラボは実ユーザー"],
-    "answer": 0,
-    "explain": "改善判断はフィールド（CrUX）も合わせて見る。"
-  },
-  {
-    "id": "q100",
-    "level": "Hard",
-    "tags": ["Index", "Crawl"],
-    "q": "100問完走で得たいスキルは？（このクイズの狙いに近いのは）",
-    "choices": ["暗記だけ", "原理→現象→打ち手の因果で説明できる力", "デザイン力", "動画編集力"],
-    "answer": 1,
-    "explain": "テクニカルSEOは“現象の原因→最短の打ち手”を説明できると強い。"
-  }
+  {"id":"q001","level":"Easy","tags":["Index"],"q":"meta robots noindex の主な目的は？","choices":["ランキングを上げる","インデックスから除外させる意図を伝える","クロール頻度を上げる","必ず301を発生させる"],"answer":1,"explain":"noindexは検索結果に出さない意図を伝える（命令ではなく解釈される）。"},
+  {"id":"q002","level":"Easy","tags":["Crawl","Robots"],"q":"robots.txt でブロックすると起こりやすいことは？","choices":["ページ内容を解析できる","ページを取得できないためnoindex等を読めない","必ずインデックスが消える","必ず404になる"],"answer":1,"explain":"robotsブロックは取得自体を止めるため、メタ情報を読めないことがある。"},
+  {"id":"q003","level":"Easy","tags":["Index","Canonical"],"q":"rel=canonical の位置づけとして最も正しいのは？","choices":["強制命令","正規URLのシグナル（ヒント）","必ずnoindexにする","必ず301する"],"answer":1,"explain":"canonicalはヒント。内部リンク/サイトマップ/リダイレクト等との整合が重要。"},
+  {"id":"q004","level":"Easy","tags":["Crawl","Sitemap"],"q":"XMLサイトマップの役割として正しいのは？","choices":["掲載URLは必ずインデックス","発見とクロールの手がかり","ランキング要因そのもの","重複URLを自動削除"],"answer":1,"explain":"サイトマップは発見/優先度のヒント。インデックス保証ではない。"},
+  {"id":"q005","level":"Easy","tags":["Crawl","Index"],"q":"HTTPステータス 404 が示すのは？","choices":["恒久移転","一時移転","見つからない","サーバーエラー"],"answer":2,"explain":"404はNot Found。削除/存在しないURLに返す。"},
+  {"id":"q006","level":"Easy","tags":["Index","Redirect"],"q":"301 リダイレクトの意味は？","choices":["一時的な転送","恒久的な転送","クロール停止","noindex命令"],"answer":1,"explain":"301は恒久転送。正規化や移転時に使う。"},
+  {"id":"q007","level":"Easy","tags":["Index","Redirect"],"q":"302 リダイレクトの意味は？","choices":["恒久転送","一時転送","404","サーバーダウン"],"answer":1,"explain":"302は基本的に一時転送。用途に応じて使い分ける。"},
+  {"id":"q008","level":"Easy","tags":["Index"],"q":"重複ページが大量にあると起きやすい問題は？","choices":["クロール効率低下や評価分散","必ず順位が上がる","必ずCWVが改善","必ずサイトリンクが出る"],"answer":0,"explain":"重複はクロール/評価の分散やインデックス品質低下につながる。"},
+  {"id":"q009","level":"Easy","tags":["Crawl"],"q":"内部リンクの主な価値は？","choices":["外部リンクを自動生成","発見性と重要度シグナル","広告収益を増やす","画像を圧縮する"],"answer":1,"explain":"内部リンクは発見性・巡回・重要度伝達に効く。"},
+  {"id":"q010","level":"Easy","tags":["Index"],"q":"URL正規化（canonical/redirect等）の目的は？","choices":["URLを増やす","重複を統合し評価分散を防ぐ","クローラをブロックする","JSを減らす"],"answer":1,"explain":"同一/類似コンテンツの評価分散を抑え、正規URLへ寄せる。"},
+  {"id":"q011","level":"Medium","tags":["Crawl"],"q":"クロールバジェットに影響しやすいのは？","choices":["サイトの色","大量の重複URLや無駄URL","h1の数","OGPタグ"],"answer":1,"explain":"無駄URL増加はクロールの浪費に直結する。"},
+  {"id":"q012","level":"Medium","tags":["Crawl","Logs"],"q":"ログ分析で最も見たい指標の一つは？","choices":["フォントサイズ","GooglebotのヒットURL/頻度/ステータス","SNSいいね数","画像の彩度"],"answer":1,"explain":"どのURLにどれだけ来て何を返したかが分かる。"},
+  {"id":"q013","level":"Medium","tags":["Index"],"q":"Search Consoleの「クロール済み - インデックス未登録」で疑うべきは？","choices":["コンテンツ品質/重複/薄さ","ドメイン期限切れ","必ずrobotsブロック","必ず手動ペナルティ"],"answer":0,"explain":"品質や重複、価値不足でインデックスされないケースが多い。"},
+  {"id":"q014","level":"Medium","tags":["Index","Robots"],"q":"X-Robots-Tag が使えるのは？","choices":["HTTPヘッダで制御できる","HTML内だけ","画像の色だけ","CSSのみ"],"answer":0,"explain":"HTTPヘッダでnoindex等を指定でき、PDFなどにも適用可能。"},
+  {"id":"q015","level":"Medium","tags":["Index","Hreflang"],"q":"hreflangの目的は？","choices":["ページ速度改善","言語/地域の適切なURLを提示","必ず順位上昇","クロール停止"],"answer":1,"explain":"言語/地域ごとに適切なURLを検索エンジンに伝える。"},
+  {"id":"q016","level":"Medium","tags":["Index","Hreflang"],"q":"hreflangで重要な実装要件は？","choices":["片方向でもOK","相互参照（return tag）","必ずJSで挿入","必ず画像に埋め込む"],"answer":1,"explain":"多くの場合、相互参照がないと不整合になりやすい。"},
+  {"id":"q017","level":"Medium","tags":["Index"],"q":"パラメータ付きURLが大量発生する典型例は？","choices":["ファセットナビ/並び替え/フィルタ","OGP","SVG","favicon"],"answer":0,"explain":"ECの絞り込み・並び替えは無限URLを生みやすい。"},
+  {"id":"q018","level":"Medium","tags":["Index","Canonical"],"q":"canonical先が404のとき起きやすいのは？","choices":["必ず統合される","シグナル無効化/無視されやすい","必ず順位上がる","必ずクロール停止"],"answer":1,"explain":"正規先がエラーだと採用されにくい。ステータス整合が重要。"},
+  {"id":"q019","level":"Medium","tags":["Index","Redirect"],"q":"リダイレクトチェーンが長いと何が起きやすい？","choices":["遅延・クロール効率悪化","CLS改善","画像最適化","構造化データ増加"],"answer":0,"explain":"チェーンは遅延とクロール浪費を招くので短縮が基本。"},
+  {"id":"q020","level":"Medium","tags":["Index"],"q":"HTTP→HTTPS移行で重要な対応は？","choices":["robotsを全部Disallow","301/内部リンク/サイトマップ/正規化の統一","タイトルを全部同じにする","画像を全部PNG"],"answer":1,"explain":"シグナルをHTTPSへ統一するのが基本。"},
+  {"id":"q021","level":"Medium","tags":["Rendering"],"q":"CSR（クライアントサイドレンダリング）だけに依存すると起きやすい課題は？","choices":["HTML初期表示が薄く発見/評価が遅れる","必ず順位が上がる","必ずLCP改善","必ずクロール停止"],"answer":0,"explain":"初期HTMLが薄いとレンダリング待ちで評価が遅れやすい。"},
+  {"id":"q022","level":"Medium","tags":["Rendering"],"q":"SSRの主なメリットは？","choices":["JSをゼロにできる","初期HTMLに主要コンテンツを載せやすい","必ず広告収益が上がる","robotsが不要になる"],"answer":1,"explain":"初期HTMLが充実し、発見/表示が安定しやすい。"},
+  {"id":"q023","level":"Medium","tags":["Rendering"],"q":"レンダリングブロックになりやすいのは？","choices":["同期読み込みのCSS/JS","alt属性","titleタグ","canonicalタグ"],"answer":0,"explain":"Critical CSSやdefer/asyncなどで影響を減らす。"},
+  {"id":"q024","level":"Medium","tags":["CWV"],"q":"LCPは何を測る？","choices":["入力応答の速さ","最大要素が表示されるまで","レイアウトのズレ","サーバーの稼働率"],"answer":1,"explain":"Largest Contentful Paint＝主要（最大）要素の表示完了まで。"},
+  {"id":"q025","level":"Medium","tags":["CWV"],"q":"CLSは何を測る？","choices":["ページの色","レイアウトの視覚的なズレ","JSの行数","クロール頻度"],"answer":1,"explain":"Cumulative Layout Shift＝視覚的なガタつき。"},
+  {"id":"q026","level":"Medium","tags":["CWV"],"q":"INP（旧FIDより重視される指標）は何を測る？","choices":["画像サイズ","操作に対する応答性","robots設定","サイトマップ数"],"answer":1,"explain":"Interaction to Next Paint＝操作してから次の描画までの応答性。"},
+  {"id":"q027","level":"Medium","tags":["CWV"],"q":"CLSを悪化させやすい要因は？","choices":["画像/広告枠のサイズ未指定","gzip圧縮","キャッシュ","preconnect"],"answer":0,"explain":"幅/高さ未指定で後から要素が押し下げるとズレが出る。"},
+  {"id":"q028","level":"Medium","tags":["CWV"],"q":"LCP改善で効きやすいのは？","choices":["ヒーロー画像の最適化と優先読み込み","h1を増やす","OGタグ追加","robotsをDisallow"],"answer":0,"explain":"LCP要素（ヒーロー画像/大見出し）の最適化が効く。"},
+  {"id":"q029","level":"Medium","tags":["CWV"],"q":"不要なJSが多いと悪化しやすい指標は？","choices":["INP/LCP","hreflang","canonical","sitemap"],"answer":0,"explain":"JS実行が重いと応答性や描画が遅れる。"},
+  {"id":"q030","level":"Medium","tags":["CWV"],"q":"画像最適化で一般的に推奨されやすい形式は？","choices":["BMP","WebP/AVIFなど","TIFF","PSD"],"answer":1,"explain":"圧縮効率の高い次世代フォーマットが有利なことが多い。"},
+  {"id":"q031","level":"Medium","tags":["CWV","Rendering"],"q":"フォント読み込みで表示遅延を減らす施策は？","choices":["font-display: swap","h1を削除","robotsブロック","canonical削除"],"answer":0,"explain":"swapでフォント待ちによる表示停止を減らす。"},
+  {"id":"q032","level":"Medium","tags":["CWV"],"q":"CDNの主なメリットは？","choices":["データベースを消せる","配信をユーザー近くにして遅延を減らす","canonical不要","必ず順位が上がる"],"answer":1,"explain":"地理的に近いエッジから配信しTTFB等を改善しやすい。"},
+  {"id":"q033","level":"Medium","tags":["CWV"],"q":"TTFBを改善しやすい要因は？","choices":["サーバー処理/キャッシュ/CDN","alt属性","h2の数","OG画像"],"answer":0,"explain":"初期応答はサーバー性能やキャッシュ戦略に依存しやすい。"},
+  {"id":"q034","level":"Medium","tags":["Schema"],"q":"構造化データ（Schema）の主目的は？","choices":["検索エンジンへ意味を伝える","必ず順位を上げる","必ずクロール停止","画像を圧縮する"],"answer":0,"explain":"内容の意味付けを明確化し、リッチ結果等の理解を助ける。"},
+  {"id":"q035","level":"Medium","tags":["Schema"],"q":"JSON-LDの特徴は？","choices":["HTMLと混ぜずに書けない","scriptタグ内に書く形式","robots.txtに書く","CSSに書く"],"answer":1,"explain":"JSON-LDはscript type=application/ld+json に記述する。"},
+  {"id":"q036","level":"Medium","tags":["Schema"],"q":"構造化データのバリデーションに使う代表的なものは？","choices":["Rich Results Test","PageSpeed Insights","Ahrefs","Photoshop"],"answer":0,"explain":"Rich Results Test等でエラー/警告を確認できる。"},
+  {"id":"q037","level":"Medium","tags":["Logs"],"q":"5xxが多発していると起きやすいのは？","choices":["クロール低下/再試行増","必ず順位上昇","CLS改善","構造化データ増"],"answer":0,"explain":"サーバーエラーはクロール効率と評価に悪影響。"},
+  {"id":"q038","level":"Medium","tags":["Index"],"q":"soft 404（ソフト404）とは？","choices":["実際は200だが中身が無い/エラーに見える","必ず301","画像が無い","JSが無い"],"answer":0,"explain":"200返しても内容が無いとGoogleがsoft 404扱いすることがある。"},
+  {"id":"q039","level":"Medium","tags":["Index"],"q":"ページネーションでよくある課題は？","choices":["深いページが発見されにくい","必ず順位上がる","必ずnoindexになる","必ずCLSが悪化"],"answer":0,"explain":"深いページの発見性と内部リンク設計が重要。"},
+  {"id":"q040","level":"Medium","tags":["Index"],"q":"パラメータの正規化で一般的に使うのは？","choices":["canonical/内部リンク統一","OGP","favicon","AMPだけ"],"answer":0,"explain":"正規URLに寄せるシグナルを揃えるのが基本。"},
+  {"id":"q041","level":"Hard","tags":["Crawl","Logs"],"q":"ログでGooglebotが特定ディレクトリばかりクロールする時に疑うべきは？","choices":["内部リンク偏り/無限URL/リダイレクト","画像形式","OGP設定","タイトルの長さ"],"answer":0,"explain":"巡回が偏る原因（無限URL/内部リンク/正規化）を疑う。"},
+  {"id":"q042","level":"Hard","tags":["Index","Canonical"],"q":"canonicalが無視されやすいケースは？","choices":["正規先が別内容/エラー/シグナル不整合","h1が1つ","画像がWebP","CSSが少ない"],"answer":0,"explain":"内容一致とシグナル整合がないと採用されにくい。"},
+  {"id":"q043","level":"Hard","tags":["Index"],"q":"同一ページで canonical と noindex を同時に入れると？","choices":["意図が矛盾し評価が不安定になりうる","必ず順位上昇","必ずクロール停止","必ず301になる"],"answer":0,"explain":"canonicalは統合ヒント、noindexは除外意図で矛盾しやすい。"},
+  {"id":"q044","level":"Hard","tags":["Index","Hreflang"],"q":"hreflang x-default の用途は？","choices":["デフォルトの言語/地域を示す","速度改善","クロール停止","構造化データ"],"answer":0,"explain":"どの言語にも合わない場合の既定URLを示す。"},
+  {"id":"q045","level":"Hard","tags":["Crawl"],"q":"巨大サイトでXMLサイトマップを分割する主な理由は？","choices":["管理・上限・更新単位を分けるため","順位を上げるため","robots不要になるため","JSが減るため"],"answer":0,"explain":"上限や運用面で分割し、更新管理をしやすくする。"},
+  {"id":"q046","level":"Medium","tags":["CWV"],"q":"画像の遅延読み込み（lazy-load）で注意すべきは？","choices":["LCP要素を遅延させない","必ずCLSが0になる","robotsが不要","canonicalが不要"],"answer":0,"explain":"ヒーロー画像をlazyにするとLCPが悪化しやすい。"},
+  {"id":"q047","level":"Medium","tags":["CWV"],"q":"preconnect の効果は？","choices":["外部接続の初期コストを先に払う","画像を圧縮","noindexを付与","301を作る"],"answer":0,"explain":"DNS/TLSなどの接続準備を前倒しできる。"},
+  {"id":"q048","level":"Medium","tags":["CWV"],"q":"HTTPキャッシュが効くと改善しやすいのは？","choices":["再訪時の読み込み","hreflang","canonical採用","robots解釈"],"answer":0,"explain":"静的リソースの再取得を減らし表示が速くなる。"},
+  {"id":"q049","level":"Medium","tags":["Schema"],"q":"FAQ構造化データで重要なのは？","choices":["ページ内に実際のQ&Aが存在する","必ず順位が上がる","JSだけで生成する","robotsをDisallowする"],"answer":0,"explain":"見えない/存在しない内容をマークアップするのはNG。"},
+  {"id":"q050","level":"Medium","tags":["Index"],"q":"rel='nofollow' の基本的な意味は？","choices":["リンクシグナルを渡さない意図","必ずクロール停止","必ずnoindex","必ず順位上がる"],"answer":0,"explain":"リンクの評価伝達を抑えるヒントとして扱われる。"},
+  {"id":"q051","level":"Medium","tags":["Index"],"q":"重複コンテンツ対策で最優先になりやすいのは？","choices":["正規URLへの統合（redirect/canonical）","色を変える","画像を増やす","フォントを変える"],"answer":0,"explain":"まず正規化の方針を決めてシグナルを統一する。"},
+  {"id":"q052","level":"Medium","tags":["Crawl"],"q":"サイト内検索結果ページを無制限にインデックスさせると？","choices":["薄いページが増えやすい","必ず順位上昇","必ずCWV改善","必ず404になる"],"answer":0,"explain":"内部検索は無限に近い薄いURLを生みやすい。"},
+  {"id":"q053","level":"Hard","tags":["Crawl","Index"],"q":"URLパラメータで無限クロールが起きている時の優先対応は？","choices":["内部リンク/正規化/不要URLの生成抑制","h1を増やす","OGP追加","画像形式変更のみ"],"answer":0,"explain":"発生源を止め、正規化と内部リンクを整える。"},
+  {"id":"q054","level":"Medium","tags":["Index"],"q":"同一内容で / と /index.html が併存する時の基本は？","choices":["正規化（301/canonical/内部リンク統一）","両方noindex","robotsで両方ブロック","何もしない"],"answer":0,"explain":"正規URLを決めてシグナル統一が基本。"},
+  {"id":"q055","level":"Medium","tags":["Index"],"q":"wwwあり/なし、http/https が混在していると？","choices":["重複・評価分散・計測分断が起きやすい","必ず順位上がる","必ずCLS改善","必ずnoindexになる"],"answer":0,"explain":"1つに統一（リダイレクト＋内部リンク＋サイトマップ）。"},
+  {"id":"q056","level":"Medium","tags":["CWV"],"q":"画像のサイズ指定（width/height）を入れる主な目的は？","choices":["CLSを抑える","LCPを悪化させる","robotsを簡略化","canonicalを付与"],"answer":0,"explain":"表示枠を確保してレイアウトズレを防ぐ。"},
+  {"id":"q057","level":"Medium","tags":["CWV"],"q":"巨大なCSSが多いと起きやすいのは？","choices":["レンダリング遅延","hreflang欠落","サイトマップ消失","404増加"],"answer":0,"explain":"Critical CSSや分割で初期描画を速くする。"},
+  {"id":"q058","level":"Medium","tags":["Rendering"],"q":"defer 属性の効果は？","choices":["HTML解析をブロックしにくい順でJSを実行","画像を圧縮","noindex付与","301作成"],"answer":0,"explain":"パースを阻害しにくく、DOM構築後に実行される。"},
+  {"id":"q059","level":"Medium","tags":["Rendering"],"q":"async 属性の特徴は？","choices":["読み込み完了次第すぐ実行され順序は保証されない","必ず順番通り実行","CSS専用","robots専用"],"answer":0,"explain":"依存関係があるスクリプトには注意。"},
+  {"id":"q060","level":"Medium","tags":["Schema"],"q":"Organization構造化データでよく使うのは？","choices":["name/logo/sameAs など","LCP/CLS","canonicalのみ","robotsのみ"],"answer":0,"explain":"ブランドの同一性（ロゴ・公式SNS等）を補助できる。"},
+  {"id":"q061","level":"Medium","tags":["Index"],"q":"rel='prev/next' は現在どう扱われることが多い？","choices":["Googleではランキング/統合の強いシグナルではない","必ず統合される","必ずnoindex","必ず301"],"answer":0,"explain":"現在は強いインデックス統合の仕組みとしては期待しすぎない。"},
+  {"id":"q062","level":"Medium","tags":["Index"],"q":"パンくずリストがSEOに役立つ理由は？","choices":["階層構造を明確にし内部リンクを補強","画像圧縮になる","robots不要になる","必ず順位上がる"],"answer":0,"explain":"情報設計と内部リンクの強化につながる。"},
+  {"id":"q063","level":"Medium","tags":["Schema"],"q":"BreadcrumbList構造化データの効果として適切なのは？","choices":["検索結果でパンくず表示の理解を助ける","必ず順位上昇","必ずインデックス削除","CLS改善"],"answer":0,"explain":"パンくずの意味付けを検索エンジンに伝える。"},
+  {"id":"q064","level":"Medium","tags":["Logs"],"q":"「クロールは来ているが重要ページに少ない」時の打ち手は？","choices":["内部リンク強化/サイトマップ整備/無駄URL削減","色変更","OGP","画像をBMP化"],"answer":0,"explain":"重要ページに巡回を寄せる設計が必要。"},
+  {"id":"q065","level":"Medium","tags":["Crawl"],"q":"HTTP 429 が増えている時に疑うのは？","choices":["レート制限/ボット制御/サーバー設定","canonical","hreflang","タイトル"],"answer":0,"explain":"Too Many Requests。アクセス制限の調整が必要な場合がある。"},
+  {"id":"q066","level":"Medium","tags":["Index"],"q":"PDFを検索結果に出したくない時に使えるのは？","choices":["X-Robots-Tag: noindex","titleタグ短縮","h1を増やす","OGP追加"],"answer":0,"explain":"HTML以外はHTTPヘッダnoindexが便利。"},
+  {"id":"q067","level":"Hard","tags":["Index"],"q":"「インデックス登録をリクエスト」しても反映されない典型理由は？","choices":["品質/重複/価値不足","favicon未設定","OGP未設定","色が暗い"],"answer":0,"explain":"リクエストは優先度を上げるだけで、品質問題は解決しない。"},
+  {"id":"q068","level":"Hard","tags":["Index"],"q":"パラメータURLを大量にnoindexする時の注意点は？","choices":["クロール負荷は残りうる（発生源対策も必要）","必ずクロールが止まる","必ず順位が上がる","必ずJSが減る"],"answer":0,"explain":"noindexはインデックス除外意図。発生抑制・正規化も重要。"},
+  {"id":"q069","level":"Hard","tags":["Crawl"],"q":"クロールを“止めたい”のか“インデックスさせたくない”のかで最も違うのは？","choices":["robotsとnoindexの使い分け","画像形式","タイトル長","OGP"],"answer":0,"explain":"noindexはクロール必要な場合が多い。目的を分ける。"},
+  {"id":"q070","level":"Medium","tags":["Crawl"],"q":"サイトマップに載せるべきURLは基本的に？","choices":["インデックスさせたい正規URL","全URL（パラメータ含む）","404 URL","robotsブロックURLだけ"],"answer":0,"explain":"正規URLを載せ、余計なURLは入れないのが基本。"},
+  {"id":"q071","level":"Medium","tags":["Index"],"q":"同一内容で言語だけ違うページを統合（canonical）してよい？","choices":["基本は統合しない（hreflang等で出し分け）","常に統合すべき","常にnoindex","常にrobotsブロック"],"answer":0,"explain":"言語別は統合より出し分けが一般的。"},
+  {"id":"q072","level":"Medium","tags":["Schema"],"q":"Article構造化データで重要なプロパティ例は？","choices":["headline/datePublished/author","LCP/CLS","canonicalのみ","robotsのみ"],"answer":0,"explain":"記事の属性（見出し/著者/公開日）を明確にする。"},
+  {"id":"q073","level":"Medium","tags":["Schema"],"q":"Product構造化データでよく使うのは？","choices":["name/offers/price/availability","h1/h2","robots","HTTP 500"],"answer":0,"explain":"価格/在庫/商品属性が中心。"},
+  {"id":"q074","level":"Hard","tags":["Schema"],"q":"構造化データでやってはいけないのは？","choices":["ページに存在しない内容をマークアップ","実データをマークアップ","テストで検証","エラーを修正"],"answer":0,"explain":"ユーザーに見えない虚偽情報のマークアップはNG。"},
+  {"id":"q075","level":"Medium","tags":["CWV"],"q":"画像をレスポンシブで出し分ける代表的手法は？","choices":["srcset/sizes","noindex","robots","hreflang"],"answer":0,"explain":"端末に応じた画像を配信しやすい。"},
+  {"id":"q076","level":"Medium","tags":["CWV"],"q":"圧縮（gzip/br）で主に軽くなるのは？","choices":["HTML/CSS/JSなどのテキスト資産","PNGだけ","動画だけ","PDFだけ"],"answer":0,"explain":"テキスト系リソースに効きやすい。"},
+  {"id":"q077","level":"Medium","tags":["CWV"],"q":"HTTP/2 のメリットとして適切なのは？","choices":["多重化などで効率的に転送できる","必ず画像がWebPになる","robotsが不要","必ず順位上がる"],"answer":0,"explain":"多重化により並列転送が効率化されやすい。"},
+  {"id":"q078","level":"Hard","tags":["CWV"],"q":"サードパーティタグが多いと悪化しやすいのは？","choices":["INP/LCP/総合パフォーマンス","hreflang精度","canonical採用","robots解釈"],"answer":0,"explain":"外部JSが増えると描画と応答性が落ちやすい。"},
+  {"id":"q079","level":"Hard","tags":["Logs"],"q":"ログで 301→200 の成功でも課題になりうるのは？","choices":["チェーンが長い/大量に発生している","必ず順位上昇","CLSが0になる","構造化データ増"],"answer":0,"explain":"大量チェーンはクロール浪費。直接200へ寄せる。"},
+  {"id":"q080","level":"Hard","tags":["Crawl"],"q":"カテゴリページが薄い場合の典型改善は？","choices":["意図に合う説明/内部リンク/ファセット整理","robotsでブロック","全てnoindex","画像をBMPに"],"answer":0,"explain":"薄い一覧は補足情報と設計で価値を上げる。"},
+  {"id":"q081","level":"Medium","tags":["Index"],"q":"同じコンテンツが複数URLで出る原因になりやすいのは？","choices":["末尾スラッシュ/大文字小文字/UTM/パラメータ","CSS","OGP","favicon"],"answer":0,"explain":"URL揺れの統一が重要。"},
+  {"id":"q082","level":"Medium","tags":["Index"],"q":"大文字URLと小文字URLが別扱いになる可能性があるのは？","choices":["サーバー設定次第で区別される","必ず同一扱い","必ず404","必ず301"],"answer":0,"explain":"ケースにより別URL。統一方針が必要。"},
+  {"id":"q083","level":"Medium","tags":["Index"],"q":"正規URLを内部リンクで一貫させることの目的は？","choices":["canonical採用を助ける","CLS改善","画像圧縮","robots簡略化"],"answer":0,"explain":"シグナル一貫性を高めて正規化の精度を上げる。"},
+  {"id":"q084","level":"Hard","tags":["Index"],"q":"「重複、Googleにより正規URLが選択されました」で重要なのは？","choices":["Googleの選択理由（内部リンク/サイトマップ/内容一致）を改善","色を変える","OGP","画像形式だけ変更"],"answer":0,"explain":"Googleの正規選択を理解し、シグナルを揃える。"},
+  {"id":"q085","level":"Medium","tags":["Index"],"q":"URL検査で「検出 - インデックス未登録」が多い時は？","choices":["内部リンク/サイトマップ/発見経路を改善","h1を増やす","OGP追加","画像をBMP"],"answer":0,"explain":"発見経路（内部リンク/サイトマップ）を強くする。"},
+  {"id":"q086","level":"Medium","tags":["Crawl"],"q":"孤立ページ（Orphan page）の課題は？","choices":["発見されにくい","必ず順位上がる","必ずCWV改善","必ずnoindex"],"answer":0,"explain":"内部リンクがないと発見性が低い。"},
+  {"id":"q087","level":"Hard","tags":["Crawl"],"q":"孤立ページを減らす最も直接的な施策は？","choices":["内部リンクを張る/サイト構造を見直す","OGP","画像圧縮だけ","robotsブロック"],"answer":0,"explain":"発見性の設計問題なので内部リンクが本筋。"},
+  {"id":"q088","level":"Medium","tags":["Index"],"q":"カテゴリ一覧に同一商品が大量に重複表示されると？","choices":["薄い重複ページが増えやすい","必ず順位上がる","必ずLCP改善","必ずnoindex"],"answer":0,"explain":"重複や薄さが増えると評価が落ちやすい。"},
+  {"id":"q089","level":"Hard","tags":["CWV"],"q":"動画・巨大画像がファーストビューにあると最優先で見る指標は？","choices":["LCP","hreflang","canonical","robots"],"answer":0,"explain":"ファーストビューの最大要素がLCPになりやすい。"},
+  {"id":"q090","level":"Hard","tags":["CWV"],"q":"モバイルでタップ遅延が体感される時に疑うのは？","choices":["メインスレッド占有（JS重い）→INP悪化","robots","hreflang","サイトマップ"],"answer":0,"explain":"応答性はINP。JSの削減や分割が効く。"},
+  {"id":"q091","level":"Medium","tags":["Schema"],"q":"レビューの構造化データで注意すべきは？","choices":["自己サイトの実体験に基づく/ガイドライン遵守","適当に星5を書く","ページに表示しない","robotsで隠す"],"answer":0,"explain":"ガイドライン違反や虚偽レビューはリスク。"},
+  {"id":"q092","level":"Hard","tags":["Schema"],"q":"構造化データのエラーと警告の違いは？","choices":["エラーは機能しない可能性が高い／警告は一部不足","両方同じ","警告の方が致命的","エラーは無視でOK"],"answer":0,"explain":"エラーは必ず修正優先。警告は影響範囲を見て対応。"},
+  {"id":"q093","level":"Hard","tags":["Logs"],"q":"Googlebotが大量に 404 を踏んでいる時の基本対応は？","choices":["内部リンク/サイトマップ/リダイレクトの整理","OGP追加","画像をWebP","色を変える"],"answer":0,"explain":"発生源（リンク/旧URL）を潰す。必要なら適切に301。"},
+  {"id":"q094","level":"Hard","tags":["Logs"],"q":"Googlebotが特定パラメータを延々クロールする時の本質対策は？","choices":["URL生成ロジック/内部リンク/正規化で止血","OGP","画像圧縮だけ","タイトル変更"],"answer":0,"explain":"無限URLの発生源を止めるのが最優先。"},
+  {"id":"q095","level":"Hard","tags":["Index"],"q":"一括でURLを“消したい”時、noindexだけで十分？","choices":["用途次第。削除/410/404や内部リンク整理も必要","常に十分","常に無意味","常に301だけでOK"],"answer":0,"explain":"目的（削除/統合/非表示）により最適手段が変わる。"},
+  {"id":"q096","level":"Medium","tags":["Index"],"q":"410 Gone の意味は？","choices":["恒久的に削除された","一時的に移転","サーバーエラー","アクセス制限"],"answer":0,"explain":"410は削除を明確に伝えるステータス。"},
+  {"id":"q097","level":"Hard","tags":["Index","Redirect"],"q":"移転後、旧URLが検索結果に残り続ける時に見直すのは？","choices":["301の有無/内部リンク/サイトマップ/キャッシュ/正規化","OGP","色","画像形式のみ"],"answer":0,"explain":"シグナル統一とリダイレクトの整合が基本。"},
+  {"id":"q098","level":"Hard","tags":["Crawl","Index"],"q":"クロールは増えたのにインデックスが増えない時の典型原因は？","choices":["品質・重複・価値不足","フォント変更","OGP","favicon"],"answer":0,"explain":"クロール＝インデックスではない。品質と重複が重要。"},
+  {"id":"q099","level":"Hard","tags":["CWV"],"q":"PageSpeedの“ラボデータ”と“フィールドデータ”の違いは？","choices":["ラボは環境固定/推定、フィールドは実ユーザー計測","両方同じ","フィールドは推定","ラボは実ユーザー"],"answer":0,"explain":"改善判断はフィールド（CrUX）も合わせて見る。"},
+  {"id":"q100","level":"Hard","tags":["Index","Crawl"],"q":"100問完走で得たいスキルは？（このクイズの狙いに近いのは）","choices":["暗記だけ","原理→現象→打ち手の因果で説明できる力","デザイン力","動画編集力"],"answer":1,"explain":"テクニカルSEOは“現象の原因→最短の打ち手”を説明できると強い。"}
 ];
 
 /** =========================================================
- * 状態
+ * 定数 / DOM
  * ========================================================= */
 const FIXED_COUNT = 30;
 
@@ -1183,6 +548,34 @@ const nextBtn = $("nextBtn");
 const skipBtn = $("skipBtn");
 const shareBtn = $("shareBtn");
 
+const levelFilterEl = $("levelFilter");
+const tagFilterEl = $("tagFilter");
+
+const bestScoreEl = $("bestScore");
+const deckCountEl = $("deckCount");
+
+const aboutBtn = $("aboutBtn");
+const reportBtn = $("reportBtn");
+
+const aboutModal = $("aboutModal");
+const closeAboutBtn = $("closeAboutBtn");
+
+const tutorialModal = $("tutorialModal");
+const closeTutorialBtn = $("closeTutorialBtn");
+const tutorialOkBtn = $("tutorialOkBtn");
+
+const reportModal = $("reportModal");
+const closeReportBtn = $("closeReportBtn");
+const openReportForm = $("openReportForm");
+const copyReportTemplate = $("copyReportTemplate");
+const reportTemplateBox = $("reportTemplateBox");
+
+const privacyLink = $("privacyLink");
+const termsLink = $("termsLink");
+
+/** =========================================================
+ * State
+ * ========================================================= */
 let deck = [];
 let idx = 0;
 let current = null;
@@ -1195,6 +588,30 @@ let score = 0;
 let correct = 0;
 let streak = 0;
 
+let startedAt = null;        // run start timestamp
+let elapsedSec = 0;          // run elapsed seconds
+let wrongTags = {};          // tag -> count
+
+/** =========================================================
+ * Storage helpers
+ * ========================================================= */
+const LS = {
+  limit: "techseoquiz.limit",
+  best: "techseoquiz.bestScore",
+  seen: "techseoquiz.seenTutorial",
+  level: "techseoquiz.levelFilter",
+  tag: "techseoquiz.tagFilter"
+};
+
+function loadNumber(key, fallback){
+  const v = localStorage.getItem(key);
+  const n = Number(v);
+  return Number.isFinite(n) ? n : fallback;
+}
+function save(key, val){
+  try{ localStorage.setItem(key, String(val)); }catch(e){}
+}
+
 /** =========================================================
  * Utils
  * ========================================================= */
@@ -1206,6 +623,12 @@ function shuffle(arr){
   }
   return a;
 }
+function clampInt(n, min, max){
+  const x = Math.floor(Number(n));
+  if(!Number.isFinite(x)) return min;
+  return Math.min(max, Math.max(min, x));
+}
+function uniq(arr){ return [...new Set(arr)] }
 
 function setProgress(){
   const total = deck.length || FIXED_COUNT;
@@ -1246,24 +669,66 @@ function renderMeta(q){
   qMetaEl.innerHTML = chips.join("");
 }
 
-/** =========================================================
- * Core
- * ========================================================= */
-function buildDeck(){
-  // 毎回ランダム（orderEl等は不要）
-  const ids = QUESTIONS.map(q=>q.id);
-  deck = shuffle(ids).slice(0, Math.min(FIXED_COUNT, ids.length));
-  idx = 0;
-  remainingEl.textContent = String(deck.length);
-  setProgress();
-}
-
 function updateHUD(){
   scoreEl.textContent = String(score);
   correctEl.textContent = String(correct);
   streakEl.textContent = String(streak);
 }
 
+function formatTime(sec){
+  const s = Math.max(0, Math.floor(sec));
+  const m = Math.floor(s/60);
+  const r = s%60;
+  if(m <= 0) return `${r}s`;
+  return `${m}m ${String(r).padStart(2,"0")}s`;
+}
+
+/** =========================================================
+ * Filters / Deck
+ * ========================================================= */
+function getFilteredQuestions(){
+  const level = levelFilterEl.value;
+  const tag = tagFilterEl.value;
+
+  return QUESTIONS.filter(q=>{
+    const levelOk = (level === "ALL") ? true : (q.level === level);
+    const tagOk = (tag === "ALL") ? true : ((q.tags||[]).includes(tag));
+    return levelOk && tagOk;
+  });
+}
+
+function buildTagOptions(){
+  const tags = uniq(QUESTIONS.flatMap(q=>q.tags || [])).sort((a,b)=>a.localeCompare(b));
+  tagFilterEl.innerHTML = `<option value="ALL">すべて</option>` + tags.map(t=>`<option value="${t}">${t}</option>`).join("");
+}
+
+function buildDeck(){
+  const pool = getFilteredQuestions();
+  const ids = pool.map(q=>q.id);
+  deck = shuffle(ids).slice(0, Math.min(FIXED_COUNT, ids.length));
+
+  idx = 0;
+  remainingEl.textContent = String(deck.length);
+  deckCountEl.textContent = String(deck.length);
+
+  // 出題数が0ならガード
+  if(deck.length === 0){
+    qMetaEl.innerHTML = "";
+    qEl.textContent = "出題できる問題がありません（フィルタを変更してください）";
+    choicesEl.innerHTML = "";
+    feedbackEl.classList.add("show");
+    feedbackEl.innerHTML = `<div class="ng"><b>ヒント:</b> 難易度/タグを「すべて」に戻してみてください。</div>`;
+  }else{
+    feedbackEl.classList.remove("show");
+    feedbackEl.innerHTML = "";
+  }
+
+  setProgress();
+}
+
+/** =========================================================
+ * Core
+ * ========================================================= */
 function renderQuestion(){
   locked = false;
   feedbackEl.classList.remove("show");
@@ -1281,7 +746,9 @@ function renderQuestion(){
   choicesEl.innerHTML = "";
   (current.choices || []).forEach((text,i)=>{
     const b = document.createElement("button");
+    b.type = "button";
     b.className = "btn choice";
+    b.setAttribute("aria-label", `選択肢 ${i+1}`);
     b.innerHTML = `<b style="opacity:.9">${i+1}.</b> ${text}`;
     b.onclick = ()=>judge(i);
     choicesEl.appendChild(b);
@@ -1293,14 +760,45 @@ function renderQuestion(){
 function endScreen(){
   clearInterval(timer);
   qMetaEl.innerHTML = "";
+
   const total = deck.length || 0;
   const acc = total ? Math.round((correct/total)*100) : 0;
+  elapsedSec = startedAt ? (Date.now() - startedAt)/1000 : 0;
+
+  // wrong tag summary
+  const sortedWrong = Object.entries(wrongTags).sort((a,b)=>b[1]-a[1]).slice(0,3);
+  const wrongText = sortedWrong.length
+    ? sortedWrong.map(([t,c])=>`<span class="chip">${t}: ${c}</span>`).join(" ")
+    : `<span class="chip">なし</span>`;
 
   qEl.textContent = `終了！ スコア ${score} / 正解 ${correct}/${total}（正答率 ${acc}%）`;
   choicesEl.innerHTML = "";
 
+  // best score update
+  const best = loadNumber(LS.best, 0);
+  const newBest = Math.max(best, score);
+  if(newBest !== best) save(LS.best, newBest);
+  bestScoreEl.textContent = String(newBest);
+
   feedbackEl.classList.add("show");
-  feedbackEl.innerHTML = `<div class="muted">復習おつかれ！もう一度スタートで別の30問が出ます。</div>`;
+  feedbackEl.innerHTML = `
+    <div class="row space" style="align-items:flex-start">
+      <div>
+        <div class="muted tiny">所要時間</div>
+        <div><b>${formatTime(elapsedSec)}</b></div>
+      </div>
+      <div>
+        <div class="muted tiny">ベストスコア</div>
+        <div><b>${newBest}</b></div>
+      </div>
+      <div>
+        <div class="muted tiny">苦手タグTOP</div>
+        <div style="margin-top:6px">${wrongText}</div>
+      </div>
+    </div>
+    <div class="hr"></div>
+    <div class="muted">復習おつかれ！もう一度スタートで別の30問が出ます。</div>
+  `;
 
   timeEl.textContent = "—";
   remainingEl.textContent = "0";
@@ -1331,6 +829,10 @@ function judge(choiceIndex){
     score += 10 + Math.min(10, streak);
     streak += 1;
   }else{
+    // wrong tag tracking
+    (current.tags||[]).forEach(t=>{
+      wrongTags[t] = (wrongTags[t] || 0) + 1;
+    });
     streak = 0;
   }
   updateHUD();
@@ -1359,18 +861,75 @@ function next(){
 }
 
 function start(){
+  // persist settings
+  save(LS.limit, Number(limitEl.value || 0));
+  save(LS.level, levelFilterEl.value);
+  save(LS.tag, tagFilterEl.value);
+
   // reset run stats
   score = 0;
   correct = 0;
   streak = 0;
   idx = 0;
   locked = false;
+  wrongTags = {};
+  startedAt = Date.now();
 
   timeEl.textContent = "—";
   updateHUD();
 
   buildDeck();
-  renderQuestion();
+  if(deck.length > 0) renderQuestion();
+}
+
+/** =========================================================
+ * Share / About / Report
+ * ========================================================= */
+function openModal(el){
+  el.classList.add("show");
+}
+function closeModal(el){
+  el.classList.remove("show");
+}
+
+function buildReportTemplate(){
+  const level = levelFilterEl.value;
+  const tag = tagFilterEl.value;
+  const limit = Number(limitEl.value || 0);
+  const url = location.href;
+
+  const ua = navigator.userAgent || "";
+  const platform = navigator.platform || "";
+
+  const text =
+`【Technical SEO Quiz 不具合報告】
+URL: ${url}
+発生日時: ${new Date().toISOString()}
+端末/環境: ${platform}
+UA: ${ua}
+
+フィルタ:
+- Level: ${level}
+- Tag: ${tag}
+設定:
+- 制限秒: ${limit}
+
+発生手順:
+1)
+2)
+3)
+
+期待する動作:
+-
+
+実際の動作:
+-
+
+補足（スクショ/動画など）:
+-`;
+
+  reportTemplateBox.textContent = text;
+  return text;
 }
 
 /** =========================================================
@@ -1403,6 +962,96 @@ document.addEventListener("keydown",(e)=>{
   }
   if(e.key === "Enter") next();
 });
+
+/** Filter change: no auto start, but deck count updates preview */
+function onFilterChanged(){
+  save(LS.level, levelFilterEl.value);
+  save(LS.tag, tagFilterEl.value);
+  // show how many available
+  const pool = getFilteredQuestions();
+  deckCountEl.textContent = String(Math.min(FIXED_COUNT, pool.length));
+}
+levelFilterEl.onchange = onFilterChanged;
+tagFilterEl.onchange = onFilterChanged;
+
+limitEl.onchange = ()=>{
+  save(LS.limit, Number(limitEl.value || 0));
+};
+
+/** About modal */
+aboutBtn.onclick = ()=>openModal(aboutModal);
+closeAboutBtn.onclick = ()=>closeModal(aboutModal);
+aboutModal.addEventListener("click",(e)=>{ if(e.target === aboutModal) closeModal(aboutModal); });
+
+/** Report modal */
+reportBtn.onclick = ()=>{
+  // set link
+  openReportForm.href = REPORT_FORM_URL || "#";
+  openReportForm.classList.toggle("danger", !REPORT_FORM_URL || REPORT_FORM_URL.includes("example.com"));
+  buildReportTemplate();
+  openModal(reportModal);
+};
+closeReportBtn.onclick = ()=>closeModal(reportModal);
+reportModal.addEventListener("click",(e)=>{ if(e.target === reportModal) closeModal(reportModal); });
+
+copyReportTemplate.onclick = async ()=>{
+  const text = buildReportTemplate();
+  try{
+    await navigator.clipboard.writeText(text);
+    copyReportTemplate.textContent = "✅ コピーしました";
+    setTimeout(()=>copyReportTemplate.textContent="📋 テンプレをコピー", 1200);
+  }catch(e){
+    prompt("このテキストをコピーしてフォームに貼ってください:", text);
+  }
+};
+
+/** Tutorial modal */
+function maybeShowTutorial(){
+  const seen = localStorage.getItem(LS.seen);
+  if(seen === "1") return;
+  openModal(tutorialModal);
+}
+function closeTutorial(){
+  save(LS.seen, "1");
+  closeModal(tutorialModal);
+}
+closeTutorialBtn.onclick = closeTutorial;
+tutorialOkBtn.onclick = closeTutorial;
+tutorialModal.addEventListener("click",(e)=>{ if(e.target === tutorialModal) closeTutorial(); });
+
+/** Init */
+(function init(){
+  // bind policy urls
+  privacyLink.href = PRIVACY_POLICY_URL;
+  termsLink.href = TERMS_URL;
+
+  // build tag select
+  buildTagOptions();
+
+  // load saved settings
+  const savedLimit = loadNumber(LS.limit, 20);
+  limitEl.value = String(savedLimit);
+
+  const savedLevel = localStorage.getItem(LS.level) || "ALL";
+  const savedTag = localStorage.getItem(LS.tag) || "ALL";
+  if(["ALL","Easy","Medium","Hard"].includes(savedLevel)) levelFilterEl.value = savedLevel;
+  // tag: set if exists
+  const tagOptions = [...tagFilterEl.querySelectorAll("option")].map(o=>o.value);
+  if(tagOptions.includes(savedTag)) tagFilterEl.value = savedTag;
+
+  // best score
+  bestScoreEl.textContent = String(loadNumber(LS.best, 0));
+
+  // initial deck count preview
+  onFilterChanged();
+
+  // show tutorial once
+  maybeShowTutorial();
+
+  // initial state
+  remainingEl.textContent = "0";
+  setProgress();
+})();
 </script>
 </body>
 </html>
