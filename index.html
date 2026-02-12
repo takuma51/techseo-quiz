@@ -703,26 +703,72 @@ function buildTagOptions(){
 }
 
 function buildDeck(){
-  const pool = getFilteredQuestions();
-  const ids = pool.map(q=>q.id);
-  deck = shuffle(ids).slice(0, Math.min(FIXED_COUNT, ids.length));
+  const levelSelId = "levelSelect"; // ←あなたの難易度selectのidに合わせる
+  const tagSelId   = "tagSelect";   // ←あなたのタグselectのidに合わせる
 
-  idx = 0;
-  remainingEl.textContent = String(deck.length);
-  deckCountEl.textContent = String(deck.length);
+  const levelEl = document.getElementById(levelSelId);
+  const tagEl   = document.getElementById(tagSelId);
 
-  // 出題数が0ならガード
-  if(deck.length === 0){
-    qMetaEl.innerHTML = "";
-    qEl.textContent = "出題できる問題がありません（フィルタを変更してください）";
-    choicesEl.innerHTML = "";
-    feedbackEl.classList.add("show");
-    feedbackEl.innerHTML = `<div class="ng"><b>ヒント:</b> 難易度/タグを「すべて」に戻してみてください。</div>`;
-  }else{
-    feedbackEl.classList.remove("show");
-    feedbackEl.innerHTML = "";
+  const level = levelEl ? levelEl.value : "ALL";
+  const tag   = tagEl   ? tagEl.value   : "ALL";
+
+  const hasTag = (q, t)=> (q.tags || []).includes(t);
+
+  // 1) フィルタ適用候補
+  const filtered = QUESTIONS.filter(q=>{
+    const okLevel = (level === "ALL") ? true : (q.level === level);
+    const okTag   = (tag === "ALL")   ? true : hasTag(q, tag);
+    return okLevel && okTag;
+  });
+
+  // 2) “補充”の優先順位（フィルタの意味をなるべく維持）
+  //    Easy不足→Medium→Hard
+  //    Medium不足→Easy→Hard
+  //    Hard不足→Medium→Easy
+  const levelPriority = {
+    "Easy":   ["Easy", "Medium", "Hard"],
+    "Medium": ["Medium", "Easy", "Hard"],
+    "Hard":   ["Hard", "Medium", "Easy"],
+    "ALL":    ["Easy", "Medium", "Hard"]
+  };
+
+  const pri = levelPriority[level] || ["Easy","Medium","Hard"];
+
+  // 3) まずフィルタ内で取る
+  let picked = shuffle(filtered.map(q=>q.id)).slice(0, Math.min(FIXED_COUNT, filtered.length));
+
+  // 4) 不足分を優先順位に沿って補充（tagは維持しつつ、levelを広げる）
+  if (picked.length < FIXED_COUNT){
+    for(const lv of pri){
+      if(picked.length >= FIXED_COUNT) break;
+
+      const pool = QUESTIONS.filter(q=>{
+        // タグは維持（tag=ALLなら制限なし）
+        const okTag = (tag === "ALL") ? true : hasTag(q, tag);
+        if(!okTag) return false;
+
+        // ALLの場合は全難易度、指定がある場合は lv に一致するもの
+        const okLv = (level === "ALL") ? true : (q.level === lv);
+        return okLv;
+      })
+      .map(q=>q.id)
+      .filter(id=>!picked.includes(id));
+
+      const need = FIXED_COUNT - picked.length;
+      picked.push(...shuffle(pool).slice(0, need));
+    }
   }
 
+  // 5) それでも足りない場合（tagが特殊で母数が少ない等）は、最後に全体から補充して必ず30にする
+  if (picked.length < FIXED_COUNT){
+    const rest = QUESTIONS.map(q=>q.id).filter(id=>!picked.includes(id));
+    picked.push(...shuffle(rest).slice(0, FIXED_COUNT - picked.length));
+  }
+
+  deck = picked;
+  idx = 0;
+
+  remainingEl.textContent = String(deck.length); // 常に30になる
   setProgress();
 }
 
